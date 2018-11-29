@@ -1,0 +1,59 @@
+---
+title: "Predicting Newborn Weight"
+author: Liam Coleman-Aulenbach, Venessa Keung, Lucy Wang
+output: pdf_document
+documentclass: article
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE, include=FALSE)
+```
+
+```{r import}
+births <- read.csv("chds_births.csv")
+```
+
+# Summary
+
+
+
+# Model Selection
+
+## Data Diagnostics
+
+### Data Exploration
+
+### Outliers
+
+### Missing Data
+
+
+## Candidate Model 1
+
+### Automated Model Selection
+
+
+## Candidate Model 2
+
+### Hand-crafted Features
+
+### Automated Model Selection
+
+
+
+# Model Diagnostics
+
+## Significance
+
+
+## AIC
+
+
+## Cross-Validation
+
+
+# Discussion
+
+
+
+# Appendix
