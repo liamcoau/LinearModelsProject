@@ -6,11 +6,15 @@ documentclass: article
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo=TRUE, include=FALSE)
+# Knitr Configuration
+knitr::opts_chunk$set(include=FALSE, results="hide")
+
 ```
 
 ```{r import}
+# Import
 births <- read.csv("chds_births.csv")
+
 ```
 
 # Summary
@@ -57,3 +61,5 @@ births <- read.csv("chds_births.csv")
 
 
 # Appendix
+```{r, ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE, include=TRUE}
+```
