@@ -13,8 +13,7 @@ knitr::opts_chunk$set(include=FALSE, results="hide")
 
 ```{r import}
 # Import
-births <- read.csv("chds_births.csv")
-
+birth <- read.csv("chds_births.csv")
 ```
 
 # Summary
@@ -23,7 +22,56 @@ births <- read.csv("chds_births.csv")
 
 # Model Selection
 
+```{r cleanData}
+#cleaning up dataset
+birth <- read.csv(file = "chds_births.csv")
+#birth$maxEdLevel <- sapply(1:nrow(birth), function(i) max(birth[i, "med"], birth[i, "fed"]))
+birth$meth <- cut(birth$meth, breaks = c(0, 5, 6, 7, 8, 9, 10), 
+                labels = c("Caucasian", "Mexican", "African-Amer", "Asian", "Mixed", "Other"),
+                 right = TRUE, include.lowest= TRUE)
+birth$med <- cut(birth$med, breaks = c(0, 1, 2, 3, 4, 5, 6, 7, 8), 
+               labels = c("elementary school", "middle school","high school", "high shcool+ trade school",
+                          "high school + some college", "college graduate", "trade school", "high school unclear"),
+               righ = FALSE)
+birth$feth <- cut(birth$feth, breaks = c(0, 5, 6, 7, 8, 9, 10), 
+                labels = c("Caucasian", "Mexican", "African-Amer", "Asian", "Mixed", "Other"),
+                 right = TRUE, include.lowest= TRUE)
+birth$fed <- cut(birth$fed, breaks = c(0, 1, 2, 3, 4, 5, 6, 7, 8), 
+               labels = c("elementary school", "middle school","high school", "high shcool+ trade school",
+                          "high school + some college", "college graduate", "trade school", "high school unclear"),
+               righ = FALSE)
+birth$smoke <- cut(birth$smoke, breaks = c(0, 1, 2, 3, 4), 
+                 labels = c("never", "smoke now", "until preg", "not anymore"), right=FALSE)
+birth$marital <- cut(birth$marital, breaks = c(0, 1, 2, 3, 4, 5), 
+                         labels = c("married", "legally separated", "divorced", "widowed", "never married"))
+# birth$maxEdLevel<- cut(birth$maxEdLevel, breaks=c(0,1,2,3,4,5,6,7,8), labels=c("elementary","middle","high", "high+trade", "high +some college", "college grad", "trade school", "high school unclear"), right=FALSE)
+birth$number<-cut(birth$number, breaks=c(0,1,2,3,4,5,6,7,8,9,10), labels=c("never smoked","1-4","5-9", "10-14", "15-19", "20-29", "30-39", "40-60", "more than 60", "smoked but don't know how much"), right=FALSE)
+
+birth$time<- cut(birth$time, breaks=c(0,1,2,3,4,5,6,7,8,9,10), labels=c("never smoked","still smokes","during pregnancy", "less than a year", "1- 2 years", "2-3 years", "3-4 years", "5-9 years", "more than 10 years", "quit but don't know when"), right=FALSE)
+
+birth$income<- cut(birth$income, breaks=c(0,1,2,10), labels=c("under 2500","2500-4999","5000-over 25000"), right=FALSE)
+
+```
+
 ## Data Diagnostics
+
+```{r mice}
+library(mice)
+md.pattern(birth)
+
+tempbirth<- mice(birth, m=5, method = "pmm", seed=500)
+#summary(tempbirth)
+
+#modelFit1 <- with(tempbirth,lm(formula = wt ~ parity + mage + mht + mwt + feth + fage + time + 
+#    parity:fage + parity:mht))
+#summary(pool(modelFit1))
+
+birth1<- complete(tempbirth, 1)
+birth2<- complete(tempbirth, 2)
+birth3<- complete(tempbirth, 3)
+birth4<- complete(tempbirth, 4)
+birth5<- complete(tempbirth, 5)
+```
 
 ### Data Exploration
 
