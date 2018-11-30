@@ -59,14 +59,14 @@ decodeBirthVariates <- function (birthsDataset) {
     "Other"
   )
   edLabels <- c(
-    "elementary school",
-    "middle school",
-    "high school",
-    "high school + trade school",
-    "high school + some college",
-    "college graduate",
-    "trade school",
-    "high school unclear"
+    "Elementary School",
+    "Middle School",
+    "High School",
+    "High School + Trade School",
+    "High School + Some College",
+    "College Graduate",
+    "Trade School",
+    "High School Unclear"
   )
 
   birthsDataset$meth <- cut(
@@ -103,10 +103,10 @@ decodeBirthVariates <- function (birthsDataset) {
     birthsDataset$smoke,
     breaks = 0:4, 
     labels = c(
-      "never",
-      "smoke now",
-      "until pregnancy",
-      "not anymore"
+      "Never",
+      "Smokes Now",
+      "Until Pregnancy",
+      "Doesn't Smoke Anymore"
     ),
     right = FALSE
   )
@@ -115,11 +115,11 @@ decodeBirthVariates <- function (birthsDataset) {
     birthsDataset$marital,
     breaks = 0:5, 
     labels = c(
-      "married",
-      "legally separated",
-      "divorced",
-      "widowed",
-      "never married"
+      "Married",
+      "Legally Separated",
+      "Divorced",
+      "Widowed",
+      "Never Married"
     )
   )
   
@@ -127,7 +127,7 @@ decodeBirthVariates <- function (birthsDataset) {
     birthsDataset$number,
     breaks = 0:10,
     labels = c(
-      "never smoked",
+      "Never Smoked",
       "1-4",
       "5-9",
       "10-14",
@@ -135,8 +135,8 @@ decodeBirthVariates <- function (birthsDataset) {
       "20-29",
       "30-39",
       "40-60",
-      "more than 60",
-      "smoked but don't know how much"
+      "More Than 60",
+      "Smoked But Don't Know How Much"
     ),
     right = FALSE
   )
@@ -145,16 +145,16 @@ decodeBirthVariates <- function (birthsDataset) {
     birthsDataset$time,
     breaks = 0:10,
     labels = c(
-      "never smoked",
-      "still smokes",
-      "during pregnancy",
-      "less than a year",
-      "1-2 years",
-      "2-3 years",
-      "3-4 years",
-      "5-9 years",
-      "more than 10 years",
-      "quit but don't know when"
+      "Never Smoked",
+      "Still Smokes",
+      "During Pregnancy",
+      "Less Than A Year",
+      "1-2 Years",
+      "2-3 Years",
+      "3-4 Years",
+      "5-9 Years",
+      "More Than 10 Years",
+      "Quit But Don't Know When"
     ),
     right = FALSE
   )
@@ -163,9 +163,9 @@ decodeBirthVariates <- function (birthsDataset) {
     birthsDataset$income,
     breaks = c(0, 1, 2, 10),
     labels = c(
-      "under 2500",
+      "Under 2500",
       "2500-4999",
-      "5000-over 25000"
+      "5000-Over 25000"
     ),
     right = FALSE
   )
