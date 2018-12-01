@@ -178,7 +178,7 @@ decodedImputedBirths <- lapply(imputedBirths, decodeBirthVariates)
 
 ```{r model1}
 birthModelAIC <- 10000000
-finalAutomatedBirthModel <- lm(wt ~ 1, data = birth)
+finalAutomatedBirthModel <- lm(wt ~ 1, data = births)
 
 for(birthModel in decodedImputedBirths) {
   adjustedBirthModel <- birthModel
@@ -207,14 +207,10 @@ for(birthModel in decodedImputedBirths) {
   model <- buildModel(adjustedBirthModel, "wt", excludeVars=c())
   modelAIC <- AIC(model)
   if (modelAIC < birthModelAIC) {
-    print("=========================================")
     finalAutomatedBirthModel <- model
     birthModelAIC <- modelAIC
   }
 }
-
-print(birthModelAIC)
-print(summary(finalAutomatedBirthModel))
 
 ```
 
