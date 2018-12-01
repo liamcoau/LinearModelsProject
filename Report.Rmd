@@ -17,13 +17,9 @@ births <- read.csv("chds_births.csv")
 
 # Summary
 
-
-
 # Model Selection
 
-
-## Data Diagnostics
-
+## Data Diagnostic
 
 ### Data Exploration
 
@@ -179,6 +175,48 @@ decodedImputedBirths <- lapply(imputedBirths, decodeBirthVariates)
 ## Candidate Model 1
 
 ### Automated Model Selection
+
+```{r model1}
+birthModelAIC <- 10000000
+finalAutomatedBirthModel <- lm(wt ~ 1, data = birth)
+
+for(birthModel in decodedImputedBirths) {
+  adjustedBirthModel <- birthModel
+  adjustedBirthModel$smoke <- NULL
+  adjustedBirthModel$number <- NULL
+  M0 <- lm(wt ~ 1, data = birthModel)
+  Mmax <- lm(wt ~ (.- marital - time - meth - feth - med - fed)^2 + marital + time + meth + feth + med + fed, data = adjustedBirthModel)
+    
+  #checking if there are betas that are NA
+  beta.max <- coef(Mmax)
+  names(beta.max)[is.na(beta.max)]
+  anyNA(coef(Mmax))
+
+  buildModel <- function(adjustedBirthModel, predictVar, direction="both", excludeVars=c(), MAX_ITERS=1000) {
+    data = na.omit(adjustedBirthModel[, !colnames(adjustedBirthModel) %in% excludeVars])
+    step(
+      lm(
+        as.formula(paste(predictVar, "~", ".")),
+        data=data
+      ),
+      scope = list(lower = M0, upper = Mmax),
+      direction=direction,
+      steps=MAX_ITERS
+    )
+  }
+  model <- buildModel(adjustedBirthModel, "wt", excludeVars=c())
+  modelAIC <- AIC(model)
+  if (modelAIC < birthModelAIC) {
+    print("=========================================")
+    finalAutomatedBirthModel <- model
+    birthModelAIC <- modelAIC
+  }
+}
+
+print(birthModelAIC)
+print(summary(finalAutomatedBirthModel))
+
+```
 
 
 ## Candidate Model 2
