@@ -46,6 +46,8 @@ imputedBirths <- lapply(1:m, function(i) complete(multiplyImputedBirths, i))
 ```{r preprocessData}
 # Re-encoding and labelling variates
 decodeBirthVariates <- function (birthsDataset) {
+  newDataset = data.frame(birthsDataset)
+  
   ethLabels <- c(
     "Caucasian",
     "Mexican",
@@ -65,7 +67,7 @@ decodeBirthVariates <- function (birthsDataset) {
     "High School Unclear"
   )
 
-  birthsDataset$meth <- cut(
+  newDataset$meth <- cut(
     birthsDataset$meth,
     breaks = c(0, 5:10), 
     labels = ethLabels,
@@ -73,14 +75,14 @@ decodeBirthVariates <- function (birthsDataset) {
     include.lowest= TRUE
   )
   
-  birthsDataset$med <- cut(
+  newDataset$med <- cut(
     birthsDataset$med,
     breaks = 0:8, 
     labels = edLabels,
     right = FALSE
   )
   
-  birthsDataset$feth <- cut(
+  newDataset$feth <- cut(
     birthsDataset$feth,
     breaks = c(0, 5:10), 
     labels = ethLabels,
@@ -88,14 +90,14 @@ decodeBirthVariates <- function (birthsDataset) {
     include.lowest= TRUE
   )
   
-  birthsDataset$fed <- cut(
+  newDataset$fed <- cut(
     birthsDataset$fed,
     breaks = 0:8, 
     labels = edLabels,
     right = FALSE
   )
   
-  birthsDataset$smoke <- cut(
+  newDataset$smoke <- cut(
     birthsDataset$smoke,
     breaks = 0:4, 
     labels = c(
@@ -107,7 +109,7 @@ decodeBirthVariates <- function (birthsDataset) {
     right = FALSE
   )
   
-  birthsDataset$marital <- cut(
+  newDataset$marital <- cut(
     birthsDataset$marital,
     breaks = 0:5, 
     labels = c(
@@ -119,7 +121,7 @@ decodeBirthVariates <- function (birthsDataset) {
     )
   )
   
-  birthsDataset$number <- cut(
+  newDataset$number <- cut(
     birthsDataset$number,
     breaks = 0:10,
     labels = c(
@@ -137,7 +139,7 @@ decodeBirthVariates <- function (birthsDataset) {
     right = FALSE
   )
 
-  birthsDataset$time <- cut(
+  newDataset$time <- cut(
     birthsDataset$time,
     breaks = 0:10,
     labels = c(
@@ -155,7 +157,7 @@ decodeBirthVariates <- function (birthsDataset) {
     right = FALSE
   )
 
-  birthsDataset$income <- cut(
+  newDataset$income <- cut(
     birthsDataset$income,
     breaks = c(0, 1, 2, 10),
     labels = c(
@@ -166,7 +168,7 @@ decodeBirthVariates <- function (birthsDataset) {
     right = FALSE
   )
   
-  birthsDataset
+  newDataset
 }
 
 decodedImputedBirths <- lapply(imputedBirths, decodeBirthVariates)
@@ -218,6 +220,116 @@ for(birthModel in decodedImputedBirths) {
 ## Candidate Model 2
 
 ### Hand-crafted Features
+```{r craftFeatures}
+poundsToKg <- 0.453592
+inchesToM <- 0.0254
+underweightNormalBoundary <- 18.5
+normalOverweightBoundary <- 25
+overweightObeseBoundary <- 30
+#obeseWeightGain <- mean(c(11, 20))
+#overweightWeightGain <- mean(c(15, 25))
+#normalWeightGain <- mean(c(25, 30))
+#underweightWeightGain <- mean(c(28, 40))
+isUnderweight <- function (x) x < underweightNormalBoundary
+isNormal <- function (x) x < normalOverweightBoundary & x >= underweightNormalBoundary
+isOverweight <- function (x) x < overweightObeseBoundary & x >= normalOverweightBoundary
+isObese <- function (x) x >= overweightObeseBoundary
+
+bmi <- function (wtLbs, htIn) (wtLbs * poundsToKg) / (htIn * inchesToM)^2
+#obesePrePregnancyBMI <- function (pregnancyWt, ht) bmi(pregnancyWt - obeseWeightGain, ht)
+#overweightPrePregnancyBMI <- function (pregnancyWt, ht) bmi(pregnancyWt - overweightWeightGain, ht)
+#normalPrePregnancyBMI <- function (pregnancyWt, ht) bmi(pregnancyWt - normalWeightGain, ht)
+#underweightPrePregnancyBMI <- function (pregnancyWt, ht) bmi(pregnancyWt - underweightWeightGain, ht)
+
+prePregnancyBMI <- function (pregnancyWt, ht) {
+  attemptOrder = sample(
+    list(
+      c(obesePrePregnancyBMI, isObese),
+      c(overweightPrePregnancyBMI, isOverweight),
+      c(normalPrePregnancyBMI, isNormal),
+      c(underweightPrePregnancyBMI, isUnderweight)
+    ),
+    4
+  )
+  
+  for (bmiCategoryPair in attemptOrder) {
+    if (bmiCategoryPair[[2]](bmiCategoryPair[[1]](pregnancyWt, ht))) {
+      return(bmiCategoryPair[[1]](pregnancyWt, ht))
+    }
+  }
+}
+
+weightFromBMI <- function (prePregnancyBMI, ht) {
+  (1 / poundsToKg) * prePregnancyBMI * (ht * inchesToM)^2
+}
+
+smokingImpact <- function (time, number) {
+  # There are no 9s in number, so we do not need to handle this case
+  # Let's just call 8 a 1
+  # 
+  number[number == 8] <- 1
+  cigaretteEffectRatio = 6
+  # Take the average of the bounds of the range of cigarettes smoked by a given category
+  # as the approximate exact number of cigarettes smoked per day
+  numCigs = (number <= 4) * (5 * number - 2.5) + (number > 4) * (10 * number - 25.5)
+  # https://www.med.uottawa.ca/sim/data/Smoking_and_Health_e.htm shows that it took a
+  # six-fold increase in the number of cigarettes smoked a day to double the impact
+  # on the likelihood of developing lung cancer. We approximate the effect of smoking
+  # on birth with this ratio too.
+  activeSmokingImpact = (number != 0) * 2^(number / cigaretteEffectRatio)
+  
+  impactTimeDecay = 2
+  
+  # Approximate a scalar number of years since quiting based on the categorical variable
+  yearsQuit = (time >= 3) * (-2.5 + time) + (time >= 7) * (-18.5 + 3 * time)
+  # Time = 1 or 2 are special cases with 0 decay
+  yearsQuit = yearsQuit * (time >= 3)
+  
+  decayedSmokingImpact = activeSmokingImpact * exp(-yearsQuit / impactTimeDecay)
+  
+  decayedSmokingImpact
+}
+
+craftFeatures <- function (imputedBirthsDataset) {
+  newDataset = decodeBirthVariates(imputedBirthsDataset)
+
+  newDataset$sameEth <- factor(
+    imputedBirthsDataset$meth == imputedBirthsDataset$feth,
+    labels = c("Different", "Same")
+  )
+  # What about "Other" though?
+  
+  newDataset$htDiff <- newDataset$fht - newDataset$mht
+    
+  newDataset$lateMom <- factor(
+    newDataset$parity == 0 & newDataset$mage >= 35,
+    labels = c("Not late", "Late")
+  )
+
+  newDataset$mBMI <- bmi(newDataset$mwt, newDataset$mht)
+  
+  #newDataset$mwt <- weightFromBMI(newDataset$mBMI, newDataset$mht)
+  
+  newDataset$mBMICategory <- factor(
+    1 * isNormal(newDataset$mBMI)
+      + 2 * isOverweight(newDataset$mBMI)
+      + 3 * isObese(newDataset$mBMI),
+    labels = c("Underweight", "Normal", "Overweight", "Obese")
+  )
+  
+  newDataset$smokingImpact <- smokingImpact(
+    imputedBirthsDataset$time,
+    imputedBirthsDataset$number
+  )
+  newDataset$smokingQuitCategory <- factor(
+    1 * (imputedBirthsDataset$time == 2) + 2 * (imputedBirthsDataset$time == 1),
+    labels = c("Before/Never", "During", "Continued")
+  )
+  
+  newDataset
+}
+```
+
 
 ### Automated Model Selection
 
