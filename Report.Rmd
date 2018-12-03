@@ -72,7 +72,7 @@ We also tried to test if any of the engineered variables: difference between fat
 
 According to a 2011 study, it was found that a difference between parental height contributed to whether or not the mother would require an Emergency Cesarean Section (ECS). Since ECS can be used when a baby is too big for the birth canal or to save the baby in before it comes to term, there is a possibility that it is related to birth weight.
 
-```{r 2}
+```{r 6}
 #lm(wt ~ I(fht - mht), data=data)
 plot(births$mht, births$fht, col=adjustcolor("firebrick", 0.25), pch=16)
 abline(coef=c(0, 1))
@@ -103,18 +103,39 @@ We also found that gestation was very closely related to births, indicating that
 ### Outliers
 We discovered some values outside of the defined encodings. For example, in the marital column there were two 0s, which have no corresponding marital status. We overwrote those (likely) transcription errors with NAs which were later filled in with multiple imputation.
 ```{r outliers}
-sum(na.omit(births$meth > 10 | births$meth < 0))
-sum(na.omit(births$feth > 10 | births$meth < 0))
-sum(na.omit(births$med > 7 | births$med < 0))
-sum(na.omit(births$fed > 7 | births$med < 0))
-sum(na.omit(births$marital > 5 | births$marital < 1))
-sum(na.omit(births$income > 9 | births$income < 0))
-sum(na.omit(births$smoke > 3 | births$smoke < 0))
-sum(na.omit(births$time > 9 | births$time < 0))
-sum(na.omit(births$number > 9 | births$number < 0))
+#sum(na.omit(births$meth > 10 | births$meth < 0))
+#sum(na.omit(births$feth > 10 | births$meth < 0))
+#sum(na.omit(births$med > 7 | births$med < 0))
+#sum(na.omit(births$fed > 7 | births$med < 0))
+#sum(na.omit(births$marital > 5 | births$marital < 1))
+#sum(na.omit(births$income > 9 | births$income < 0))
+#sum(na.omit(births$smoke > 3 | births$smoke < 0))
+#sum(na.omit(births$time > 9 | births$time < 0))
+#sum(na.omit(births$number > 9 | births$number < 0))
+
+"meth"
+summary(factor(births$meth))
+"feth"
+summary(factor(births$feth))
+"med"
+summary(factor(births$med))
+"fed"
+summary(factor(births$fed))
+"marital"
+summary(factor(births$marital))
+"income"
+summary(factor(births$income))
+"smoke"
+summary(factor(births$smoke))
+"time"
+summary(factor(births$time))
+"number"
+summary(factor(births$number))
 
 mendedBirths <- data.frame(births)
 mendedBirths[mendedBirths$marital == 0, "marital"] <- NA
+#mendedBirths$number <- mendedBirths$number - 1 * (mendedBirths$number == 8)
+#summary(factor(mendedBirths$number))
 ```
 
 
@@ -135,21 +156,23 @@ nrow(na.omit(mendedBirths[, !(colnames(mendedBirths) %in% c("fht", "fwt", "incom
 
 ```{r mice}
 library(mice)
-m <- 5
+k <- 5
 
-multiplyImputedBirths <- mice(mendedBirths, m = m, method = "pmm", seed = 500, printFlag = FALSE)
+multiplyImputedBirths <- mice(mendedBirths, m = k, method = "pmm", seed = 500, printFlag = FALSE)
 
-imputedBirths <- lapply(1:m, function(i) complete(multiplyImputedBirths, i))
+imputedBirths <- lapply(1:k, function(i) complete(multiplyImputedBirths, i))
 ```
 
 
 ### Decoding
 
 ```{r preprocessData}
+numCigs <- function (number) (number <= 4) * (5 * number - 2.5) + (number > 4) * (10 * number - 25.5)
+
 # Re-encoding and labelling variates
 decodeBirthVariates <- function (birthsDataset) {
   newDataset = data.frame(birthsDataset)
-  
+
   ethLabels <- c(
     "Caucasian",
     "Mexican",
@@ -176,14 +199,14 @@ decodeBirthVariates <- function (birthsDataset) {
     right = TRUE,
     include.lowest= TRUE
   )
-  
+
   newDataset$med <- cut(
     birthsDataset$med,
     breaks = 0:8, 
     labels = edLabels,
     right = FALSE
   )
-  
+
   newDataset$feth <- cut(
     birthsDataset$feth,
     breaks = c(0, 5:10),
@@ -191,14 +214,14 @@ decodeBirthVariates <- function (birthsDataset) {
     right = TRUE,
     include.lowest= TRUE
   )
-  
+
   newDataset$fed <- cut(
     birthsDataset$fed,
     breaks = 0:8, 
     labels = edLabels,
     right = FALSE
   )
-  
+
   newDataset$smoke <- cut(
     birthsDataset$smoke,
     breaks = 0:4, 
@@ -210,10 +233,10 @@ decodeBirthVariates <- function (birthsDataset) {
     ),
     right = FALSE
   )
-  
+
   newDataset$marital <- cut(
     birthsDataset$marital,
-    breaks = 0:5, 
+    breaks = 0:5,
     labels = c(
       "Married",
       "Legally Separated",
@@ -222,24 +245,8 @@ decodeBirthVariates <- function (birthsDataset) {
       "Never Married"
     )
   )
-  
-  newDataset$number <- cut(
-    birthsDataset$number,
-    breaks = 0:10,
-    labels = c(
-      "Never Smoked",
-      "1-4",
-      "5-9",
-      "10-14",
-      "15-19",
-      "20-29",
-      "30-39",
-      "40-60",
-      "More Than 60",
-      "Smoked But Don't Know How Much"
-    ),
-    right = FALSE
-  )
+
+  newDataset$number <- numCigs(birthsDataset$number)
 
   newDataset$time <- cut(
     birthsDataset$time,
@@ -269,91 +276,11 @@ decodeBirthVariates <- function (birthsDataset) {
     ),
     right = FALSE
   )
-  
+
   newDataset
 }
-
-decodedImputedBirths <- lapply(imputedBirths, decodeBirthVariates)
 ```
 
-## Candidate Model 1
-
-### Automated Model Selection
-
-```{r selectModel}
-meanAIC <- function (model, datasets) mean(sapply(
-  datasets,
-  function (dataset) AIC(update(model, data = dataset))
-))
-
-selectModel <- function (
-  datasets,
-  predictedVar,
-  excludedVars = c(),
-  specialTerms = c()
-) {
-  selectedModelMeanAIC = .Machine$integer.max
-  selectedModel = NULL
-  
-  for (dataset in datasets) {
-    #adjustedBirthsDataset <- birthsDataset[, !colnames(birthsDataset) %in% excludedVars]
-    M0 = lm(wt ~ 1, data = dataset)
-    Mmax = lm(
-      formula(paste(
-        predictedVar,
-        "~",
-        "(.",
-        Reduce(function (l, r) paste(l, r), Map(function (term) paste("-", term), excludedVars), ""),
-        ")^2",
-        Reduce(function (l, r) paste(l, r), Map(function (term) paste("+", term), specialTerms), "")
-      )),
-      data = dataset
-    )
-    #Mmax <- lm(
-    #  wt ~ (. - gestation - marital - time - meth - feth - med - fed)^2 + marital + time + meth + feth + med + fed,
-    #  data = adjustedBirthsDataset
-    #)
-    #Mmax <- lm(wt ~ .^2, data = dataset)
-    
-    #checking if there are betas that are NA
-    #beta.max <- coef(Mmax)
-    #names(beta.max)[is.na(beta.max)]
-    #anyNA(coef(Mmax))
-  
-    candidateModel = step(
-      lm(wt ~ 1, data = dataset),
-      scope = list(lower = M0, upper = Mmax),
-      direction = "both",
-      trace = 0
-    )
-  
-    candidateModelMeanAIC = mean(sapply(
-      datasets,
-      function (dataset) AIC(update(candidateModel, data = dataset))
-    ))
-  
-    if (candidateModelMeanAIC < selectedModelMeanAIC) {
-      selectedModel = update(candidateModel, data = dataset)
-      selectedModelMeanAIC = candidateModelMeanAIC
-    }
-  }
-  
-  selectedModel
-}
-```
-
-```{r model1}
-baseBirthWeightModel <- selectModel(
-  decodedImputedBirths,
-  "wt",
-  c("gestation")
-)
-baseBirthWeightModelMeanAIC <- meanAIC(baseBirthWeightModel, decodedImputedBirths)
-```
-
-## Candidate Model 2
-
-### Hand-crafted Features
 ```{r craftFeatures}
 poundsToKg <- 0.453592
 inchesToM <- 0.0254
@@ -399,19 +326,14 @@ weightFromBMI <- function (prePregnancyBMI, ht) {
 }
 
 smokingImpact <- function (time, number) {
-  # There are no 9s in number, so we do not need to handle this case
-  # Let's just call 8 a 1
-  # 
-  number[number == 8] <- 1
   cigaretteEffectRatio = 6
   # Take the average of the bounds of the range of cigarettes smoked by a given category
   # as the approximate exact number of cigarettes smoked per day
-  numCigs = (number <= 4) * (5 * number - 2.5) + (number > 4) * (10 * number - 25.5)
   # https://www.med.uottawa.ca/sim/data/Smoking_and_Health_e.htm shows that it took a
   # six-fold increase in the number of cigarettes smoked a day to double the impact
   # on the likelihood of developing lung cancer. We approximate the effect of smoking
   # on birth with this ratio too.
-  activeSmokingImpact = (number != 0) * 2^(number / cigaretteEffectRatio)
+  activeSmokingImpact = (number != 0) * 2^(numCigs(number) / cigaretteEffectRatio)
   
   impactTimeDecay = 2
   
@@ -464,8 +386,98 @@ craftFeatures <- function (imputedBirthsDataset) {
   newDataset
 }
 
+engineeredFeatures <- c(
+  "sameEth",
+  "htDiff",
+  "lateMom",
+  "mBMI",
+  "mBMICategory",
+  "smokingImpact",
+  "smokingQuitCategory"
+)
+
 engineeredFeatureBirths <- lapply(imputedBirths, craftFeatures)
 ```
+
+## Candidate Model 1
+
+### Automated Model Selection
+
+```{r selectModel}
+meanAIC <- function (model, datasets) mean(sapply(
+  datasets,
+  function (dataset) AIC(update(model, data = dataset))
+))
+
+selectModel <- function (
+  datasets,
+  predictedVar,
+  excludedVars = c(),
+  specialTerms = c()
+) {
+  selectedModelMeanAIC = .Machine$integer.max
+  selectedModel = NULL
+  
+  for (dataset in datasets) {
+    #adjustedBirthsDataset <- birthsDataset[, !colnames(birthsDataset) %in% excludedVars]
+    M0 = lm(wt ~ 1, data = dataset)
+    Mmax = lm(
+      formula(paste(
+        predictedVar,
+        "~",
+        "(.",
+        Reduce(function (l, r) paste(l, r), Map(function (term) paste("-", term), excludedVars), ""),
+        ")^2",
+        Reduce(function (l, r) paste(l, r), Map(function (term) paste("+", term), specialTerms), "")
+      )),
+      data = dataset
+    )
+    #Mmax <- lm(
+    #  wt ~ (. - gestation - marital - time - meth - feth - med - fed)^2 + marital + time + meth + feth + med + fed,
+    #  data = adjustedBirthsDataset
+    #)
+    #Mmax <- lm(wt ~ .^2, data = dataset)
+    
+    #checking if there are betas that are NA
+    #beta.max <- coef(Mmax)
+    #names(beta.max)[is.na(beta.max)]
+    #anyNA(coef(Mmax))
+  
+    candidateModel = step(
+      Mmax,
+      #lm(wt ~ 1, data = dataset),
+      scope = list(lower = M0, upper = Mmax),
+      direction = "backward",
+      trace = 0
+    )
+  
+    candidateModelMeanAIC = mean(sapply(
+      datasets,
+      function (dataset) AIC(update(candidateModel, data = dataset))
+    ))
+  
+    if (candidateModelMeanAIC < selectedModelMeanAIC) {
+      selectedModel = update(candidateModel, data = dataset)
+      selectedModelMeanAIC = candidateModelMeanAIC
+    }
+  }
+  
+  selectedModel
+}
+```
+
+```{r model1}
+basicBirthWeightModel <- selectModel(
+  engineeredFeatureBirths,
+  "wt",
+  c("gestation", "smoke", engineeredFeatures)
+)
+basicBirthWeightModelMeanAIC <- meanAIC(basicBirthWeightModel, engineeredFeatureBirths)
+```
+
+## Candidate Model 2
+
+### Hand-crafted Features
 
 
 ### Automated Model Selection
@@ -473,8 +485,9 @@ engineeredFeatureBirths <- lapply(imputedBirths, craftFeatures)
 engineeredBirthWeightModel <- selectModel(
   engineeredFeatureBirths,
   "wt",
-  c("gestation", "smokingImpact", "smokingQuitCategory", "fht"),
-  c("smokingImpact:smokingQuitCategory")
+  c("gestation", "smoke", "time", "smokingQuitCategory", "fht", "mBMICategory"),
+  c("time")#, smokingImpact:smokingQuitCategory")
+  #c("smokingImpact", "mBMI", "htDiff", "sameEth",  "lateMom")
 )
 engineeredBirthWeightModelMeanAIC <- meanAIC(
   engineeredBirthWeightModel,
@@ -493,20 +506,20 @@ engineeredBirthWeightModelMeanAIC <- meanAIC(
 
 ## Cross-Validation
 ```{r crossValidate}
-testSetRatio = 0.2
+testSetRatio = 0.1
 
 crossValidate <- function (model1, model2, datasets) {
-  # "Usually about a 1000 is fine" - M. Lysy, Nov. 27, 2018
-  m = 1000
+  # "Usually about a thousand is fine" - M. Lysy, Nov. 27, 2018
+  m = k * 1000
 
   model1rPMSE <- vector(mode = "numeric", length = m)
   model2rPMSE <- vector(mode = "numeric", length = m)
 
   for (i in 1:m) {
-    chosenSet = datasets[[sample(length(datasets), 1)]]
-    Ntotal = nrow(data)
-    Ntest = floor(N * testSetRatio)
-    outOfSampleIndices = sample(N, Ntest)
+    chosenSet = datasets[[1 + i %% k]]
+    Ntotal = nrow(chosenSet)
+    Ntest = floor(Ntotal * testSetRatio)
+    outOfSampleIndices = sample(Ntotal, Ntest)
     trainSet = chosenSet[-outOfSampleIndices, ]
     testSet = chosenSet[outOfSampleIndices, ]
     
@@ -523,7 +536,15 @@ crossValidate <- function (model1, model2, datasets) {
   data.frame(model1 = model1rPMSE, model2 = model2rPMSE)
 }
 
-crossValidate(baseBirthWeightModel, engineeredBirthWeightModel, engineeredFeatureBirths)
+rPMSEs <- crossValidate(
+  basicBirthWeightModel,
+  engineeredBirthWeightModel,
+  engineeredFeatureBirths
+)
+
+paste(mean(rPMSEs$model1), sd(rPMSEs$model1))
+paste(mean(rPMSEs$model2), sd(rPMSEs$model2))
+boxplot(list(model1rPMSE = rPMSEs$model1, model2rPMSE = rPMSEs$model2))
 ```
 
 # Discussion
