@@ -7,7 +7,7 @@ documentclass: article
 
 ```{r setup, include=FALSE}
 # Knitr Configuration
-knitr::opts_chunk$set(include=FALSE, results="hide")
+knitr::opts_chunk$set(include=TRUE, echo=FALSE, results="markup", fig.show= "asis", fig.height = 4)
 ```
 
 ```{r import}
@@ -522,8 +522,52 @@ engineeredBirthWeightModelMeanAIC <- meanAIC(
 ## Significance
 
 ```{r leverage}
-leveragePlots(basicBirthWeightModel)
-leveragePlots(engineeredBirthWeightModel)
+#leveragePlots(basicBirthWeightModel)
+#leveragePlots(engineeredBirthWeightModel)
+
+#cook's distance vs. leverage for Model 1
+D <- cooks.distance(basicBirthWeightModel) 
+#flag some of the points
+infl.ind <- which.max(D) # top influence point
+h <- hatvalues(basicBirthWeightModel)
+p <- length(coef(basicBirthWeightModel))
+n <- nobs(basicBirthWeightModel)
+hbar <- p/n
+lev.ind <- h > 2*hbar 
+# leverage more than 2x the average
+clrs <- rep("black", len = n)
+
+clrs[lev.ind] <- "blue"
+clrs[infl.ind] <- "red"
+par(mfrow = c(1,1), mar = c(4,4,1,1))
+cex <- .8
+plot(h, D, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage Plot for Model 1", pch = 21, bg = clrs, cex = cex, cex.axis = cex)
+
+# average leverage
+abline(v = 2*hbar, col = "grey60", lty = 2) # 2x average leverage
+legend("topleft", legend = c("High Leverage", "High Influence"), pch = 21,pt.bg = c("blue", "red"), cex = cex, pt.cex = cex)
+
+#cook's distance vs. leverage for Model 2
+D <- cooks.distance(engineeredBirthWeightModel) 
+#flag some of the points
+infl.ind <- which.max(D) # top influence point
+h <- hatvalues(engineeredBirthWeightModel)
+p <- length(coef(engineeredBirthWeightModel))
+n <- nobs(engineeredBirthWeightModel)
+hbar <- p/n
+lev.ind <- h > 2*hbar 
+# leverage more than 2x the average
+clrs <- rep("black", len = n)
+
+clrs[lev.ind] <- "blue"
+clrs[infl.ind] <- "red"
+par(mfrow = c(1,1), mar = c(4,4,1,1))
+cex <- .8
+plot(h, D, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage Plot for Model 2", pch = 21, bg = clrs, cex = cex, cex.axis = cex)
+
+# average leverage
+abline(v = 2*hbar, col = "grey60", lty = 2) # 2x average leverage
+legend("topleft", legend = c("High Leverage", "High Influence"), pch = 21,pt.bg = c("blue", "red"), cex = cex, pt.cex = cex)
 
 ```
 
