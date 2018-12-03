@@ -61,17 +61,31 @@ plot(data$gestation, data$wt)
 ```
 
 
-
 ### Outliers
+We discovered some values outside of the defined encodings. For example, in the marital column there were two 0s, which have no corresponding marital status. We overwrote those (likely) transcription errors with NAs which were later filled in with multiple imputation.
+```{r outliers}
+sum(na.omit(births$meth > 10 | births$meth < 0))
+sum(na.omit(births$feth > 10 | births$meth < 0))
+sum(na.omit(births$med > 7 | births$med < 0))
+sum(na.omit(births$fed > 7 | births$med < 0))
+sum(na.omit(births$marital > 5 | births$marital < 1))
+sum(na.omit(births$income > 9 | births$income < 0))
+sum(na.omit(births$smoke > 3 | births$smoke < 0))
+sum(na.omit(births$time > 9 | births$time < 0))
+sum(na.omit(births$number > 9 | births$number < 0))
+
+mendedBirths <- data.frame(births)
+mendedBirths[mendedBirths$marital == 0, "marital"] <- NA
+```
+
 
 ### Missing Data
 
 ```{r NAs}
-N <- nrow(data)
-round(sapply(colnames(data), function (colname) sum(is.na(data[colname])) / N), 2)
+N <- nrow(mendedBirths)
+round(sapply(colnames(mendedBirths), function (colname) sum(is.na(mendedBirths[colname])) / N), 2)
 
-nrow(na.omit(data[, !(colnames(data) %in% c("fht", "fwt", "income"))])) / N
-
+nrow(na.omit(mendedBirths[, !(colnames(mendedBirths) %in% c("fht", "fwt", "income"))])) / N
 ```
 
 ## Data Preprocessing
@@ -82,7 +96,7 @@ nrow(na.omit(data[, !(colnames(data) %in% c("fht", "fwt", "income"))])) / N
 library(mice)
 m <- 5
 
-multiplyImputedBirths <- mice(births, m = m, method = "pmm", seed = 500, printFlag = FALSE)
+multiplyImputedBirths <- mice(mendedBirths, m = m, method = "pmm", seed = 500, printFlag = FALSE)
 
 imputedBirths <- lapply(1:m, function(i) complete(multiplyImputedBirths, i))
 ```
@@ -131,7 +145,7 @@ decodeBirthVariates <- function (birthsDataset) {
   
   newDataset$feth <- cut(
     birthsDataset$feth,
-    breaks = c(0, 5:10), 
+    breaks = c(0, 5:10),
     labels = ethLabels,
     right = TRUE,
     include.lowest= TRUE
@@ -225,44 +239,76 @@ decodedImputedBirths <- lapply(imputedBirths, decodeBirthVariates)
 
 ### Automated Model Selection
 
-```{r model1}
-birthModelAIC <- 10000000
-finalAutomatedBirthModel <- lm(wt ~ 1, data = births)
+```{r selectModel}
+meanAIC <- function (model, datasets) mean(sapply(
+  datasets,
+  function (dataset) AIC(update(model, data = dataset))
+))
 
-for(birthModel in decodedImputedBirths) {
-  adjustedBirthModel <- birthModel
-  adjustedBirthModel$smoke <- NULL
-  adjustedBirthModel$number <- NULL
-  M0 <- lm(wt ~ 1, data = birthModel)
-  Mmax <- lm(wt ~ (.- marital - time - meth - feth - med - fed)^2 + marital + time + meth + feth + med + fed, data = adjustedBirthModel)
-    
-  #checking if there are betas that are NA
-  beta.max <- coef(Mmax)
-  names(beta.max)[is.na(beta.max)]
-  anyNA(coef(Mmax))
-
-  buildModel <- function(adjustedBirthModel, predictVar, direction="both", excludeVars=c(), MAX_ITERS=1000) {
-    data = na.omit(adjustedBirthModel[, !colnames(adjustedBirthModel) %in% excludeVars])
-    step(
-      lm(
-        as.formula(paste(predictVar, "~", ".")),
-        data=data
-      ),
-      scope = list(lower = M0, upper = Mmax),
-      direction=direction,
-      steps=MAX_ITERS
+selectModel <- function (
+  datasets,
+  predictedVar,
+  excludedVars = c(),
+  specialTerms = c()
+) {
+  selectedModelMeanAIC = .Machine$integer.max
+  selectedModel = NULL
+  
+  for (dataset in datasets) {
+    #adjustedBirthsDataset <- birthsDataset[, !colnames(birthsDataset) %in% excludedVars]
+    M0 = lm(wt ~ 1, data = dataset)
+    Mmax = lm(
+      formula(paste(
+        predictedVar,
+        "~",
+        "(.",
+        Reduce(function (l, r) paste(l, r), Map(function (term) paste("-", term), excludedVars), ""),
+        ")^2",
+        Reduce(function (l, r) paste(l, r), Map(function (term) paste("+", term), specialTerms), "")
+      )),
+      data = dataset
     )
+    #Mmax <- lm(
+    #  wt ~ (. - gestation - marital - time - meth - feth - med - fed)^2 + marital + time + meth + feth + med + fed,
+    #  data = adjustedBirthsDataset
+    #)
+    #Mmax <- lm(wt ~ .^2, data = dataset)
+    
+    #checking if there are betas that are NA
+    #beta.max <- coef(Mmax)
+    #names(beta.max)[is.na(beta.max)]
+    #anyNA(coef(Mmax))
+  
+    candidateModel = step(
+      lm(wt ~ 1, data = dataset),
+      scope = list(lower = M0, upper = Mmax),
+      direction = "both",
+      trace = 0
+    )
+  
+    candidateModelMeanAIC = mean(sapply(
+      datasets,
+      function (dataset) AIC(update(candidateModel, data = dataset))
+    ))
+  
+    if (candidateModelMeanAIC < selectedModelMeanAIC) {
+      selectedModel = update(candidateModel, data = dataset)
+      selectedModelMeanAIC = candidateModelMeanAIC
+    }
   }
-  model <- buildModel(adjustedBirthModel, "wt", excludeVars=c())
-  modelAIC <- AIC(model)
-  if (modelAIC < birthModelAIC) {
-    finalAutomatedBirthModel <- model
-    birthModelAIC <- modelAIC
-  }
+  
+  selectedModel
 }
-
 ```
 
+```{r model1}
+baseBirthWeightModel <- selectModel(
+  decodedImputedBirths,
+  "wt",
+  c("gestation")
+)
+baseBirthWeightModelMeanAIC <- meanAIC(baseBirthWeightModel, decodedImputedBirths)
+```
 
 ## Candidate Model 2
 
@@ -270,6 +316,7 @@ for(birthModel in decodedImputedBirths) {
 ```{r craftFeatures}
 poundsToKg <- 0.453592
 inchesToM <- 0.0254
+#https://www.mayoclinic.org/healthy-lifestyle/pregnancy-week-by-week/in-depth/pregnancy-weight-gain/art-20044360?pg=1
 underweightNormalBoundary <- 18.5
 normalOverweightBoundary <- 25
 overweightObeseBoundary <- 30
@@ -375,11 +422,24 @@ craftFeatures <- function (imputedBirthsDataset) {
   
   newDataset
 }
+
+engineeredFeatureBirths <- lapply(imputedBirths, craftFeatures)
 ```
 
 
 ### Automated Model Selection
-
+```{r model2}
+engineeredBirthWeightModel <- selectModel(
+  engineeredFeatureBirths,
+  "wt",
+  c("gestation", "smokingImpact", "smokingQuitCategory", "fht"),
+  c("smokingImpact:smokingQuitCategory")
+)
+engineeredBirthWeightModelMeanAIC <- meanAIC(
+  engineeredBirthWeightModel,
+  engineeredFeatureBirths
+)
+```
 
 
 # Model Diagnostics
@@ -398,29 +458,31 @@ crossValidate <- function (model1, model2, datasets) {
   # "Usually about a 1000 is fine" - M. Lysy, Nov. 27, 2018
   m = 1000
 
-  model1rPMSE <- vector(mode="numeric", length=m)
-  model2rPMSE <- vector(mode="numeric", length=m)
+  model1rPMSE <- vector(mode = "numeric", length = m)
+  model2rPMSE <- vector(mode = "numeric", length = m)
 
   for (i in 1:m) {
     chosenSet = datasets[[sample(length(datasets), 1)]]
     Ntotal = nrow(data)
     Ntest = floor(N * testSetRatio)
     outOfSampleIndices = sample(N, Ntest)
-    sample = chosenSet[-outOfSampleIndices, ]
+    trainSet = chosenSet[-outOfSampleIndices, ]
     testSet = chosenSet[outOfSampleIndices, ]
     
-    candidateModel1 = update(candidateModel1, data=sample)
-    candidateModel2 = update(candidateModel2, data=sample)
-    outOfSamplePredictions1 = predict(candidateModel1, newdata=testSet)
-    outOfSamplePredictions2 = predict(candidateModel2, newdata=testSet)
+    model1 = update(model1, data = trainSet)
+    model2 = update(model2, data = trainSet)
+    outOfSamplePredictions1 = predict(model1, newdata = testSet)
+    outOfSamplePredictions2 = predict(model2, newdata = testSet)
     predictionErrors1 = (testSet$wt - outOfSamplePredictions1) ^ 2
     predictionErrors2 = (testSet$wt - outOfSamplePredictions2) ^ 2
-    model1Errors[i] <- sqrt(sum(predictionErrors1) / Ntest)
-    model2Errors[i] <- sqrt(sum(predictionErrors2) / Ntest)
+    model1rPMSE[i] <- sqrt(sum(predictionErrors1) / Ntest)
+    model2rPMSE[i] <- sqrt(sum(predictionErrors2) / Ntest)
   }
   
   data.frame(model1 = model1rPMSE, model2 = model2rPMSE)
 }
+
+crossValidate(baseBirthWeightModel, engineeredBirthWeightModel, engineeredFeatureBirths)
 ```
 
 # Discussion
