@@ -145,7 +145,7 @@ decodeBirthVariates <- function (birthsDataset) {
   
   newDataset$feth <- cut(
     birthsDataset$feth,
-    breaks = c(0, 5:10), 
+    breaks = c(0, 5:10),
     labels = ethLabels,
     right = TRUE,
     include.lowest= TRUE
@@ -239,44 +239,76 @@ decodedImputedBirths <- lapply(imputedBirths, decodeBirthVariates)
 
 ### Automated Model Selection
 
-```{r model1}
-birthModelAIC <- 10000000
-finalAutomatedBirthModel <- lm(wt ~ 1, data = births)
+```{r selectModel}
+meanAIC <- function (model, datasets) mean(sapply(
+  datasets,
+  function (dataset) AIC(update(model, data = dataset))
+))
 
-for(birthModel in decodedImputedBirths) {
-  adjustedBirthModel <- birthModel
-  adjustedBirthModel$smoke <- NULL
-  adjustedBirthModel$number <- NULL
-  M0 <- lm(wt ~ 1, data = birthModel)
-  Mmax <- lm(wt ~ (.- marital - time - meth - feth - med - fed)^2 + marital + time + meth + feth + med + fed, data = adjustedBirthModel)
-    
-  #checking if there are betas that are NA
-  beta.max <- coef(Mmax)
-  names(beta.max)[is.na(beta.max)]
-  anyNA(coef(Mmax))
-
-  buildModel <- function(adjustedBirthModel, predictVar, direction="both", excludeVars=c(), MAX_ITERS=1000) {
-    data = na.omit(adjustedBirthModel[, !colnames(adjustedBirthModel) %in% excludeVars])
-    step(
-      lm(
-        as.formula(paste(predictVar, "~", ".")),
-        data=data
-      ),
-      scope = list(lower = M0, upper = Mmax),
-      direction=direction,
-      steps=MAX_ITERS
+selectModel <- function (
+  datasets,
+  predictedVar,
+  excludedVars = c(),
+  specialTerms = c()
+) {
+  selectedModelMeanAIC = .Machine$integer.max
+  selectedModel = NULL
+  
+  for (dataset in datasets) {
+    #adjustedBirthsDataset <- birthsDataset[, !colnames(birthsDataset) %in% excludedVars]
+    M0 = lm(wt ~ 1, data = dataset)
+    Mmax = lm(
+      formula(paste(
+        predictedVar,
+        "~",
+        "(.",
+        Reduce(function (l, r) paste(l, r), Map(function (term) paste("-", term), excludedVars), ""),
+        ")^2",
+        Reduce(function (l, r) paste(l, r), Map(function (term) paste("+", term), specialTerms), "")
+      )),
+      data = dataset
     )
+    #Mmax <- lm(
+    #  wt ~ (. - gestation - marital - time - meth - feth - med - fed)^2 + marital + time + meth + feth + med + fed,
+    #  data = adjustedBirthsDataset
+    #)
+    #Mmax <- lm(wt ~ .^2, data = dataset)
+    
+    #checking if there are betas that are NA
+    #beta.max <- coef(Mmax)
+    #names(beta.max)[is.na(beta.max)]
+    #anyNA(coef(Mmax))
+  
+    candidateModel = step(
+      lm(wt ~ 1, data = dataset),
+      scope = list(lower = M0, upper = Mmax),
+      direction = "both",
+      trace = 0
+    )
+  
+    candidateModelMeanAIC = mean(sapply(
+      datasets,
+      function (dataset) AIC(update(candidateModel, data = dataset))
+    ))
+  
+    if (candidateModelMeanAIC < selectedModelMeanAIC) {
+      selectedModel = update(candidateModel, data = dataset)
+      selectedModelMeanAIC = candidateModelMeanAIC
+    }
   }
-  model <- buildModel(adjustedBirthModel, "wt", excludeVars=c())
-  modelAIC <- AIC(model)
-  if (modelAIC < birthModelAIC) {
-    finalAutomatedBirthModel <- model
-    birthModelAIC <- modelAIC
-  }
+  
+  selectedModel
 }
-
 ```
 
+```{r model1}
+baseBirthWeightModel <- selectModel(
+  decodedImputedBirths,
+  "wt",
+  c("gestation")
+)
+baseBirthWeightModelMeanAIC <- meanAIC(baseBirthWeightModel, decodedImputedBirths)
+```
 
 ## Candidate Model 2
 
@@ -389,11 +421,24 @@ craftFeatures <- function (imputedBirthsDataset) {
   
   newDataset
 }
+
+engineeredFeatureBirths <- lapply(imputedBirths, craftFeatures)
 ```
 
 
 ### Automated Model Selection
-
+```{r model2}
+engineeredBirthWeightModel <- selectModel(
+  engineeredFeatureBirths,
+  "wt",
+  c("gestation", "smokingImpact", "smokingQuitCategory", "fht"),
+  c("smokingImpact:smokingQuitCategory")
+)
+engineeredBirthWeightModelMeanAIC <- meanAIC(
+  engineeredBirthWeightModel,
+  engineeredFeatureBirths
+)
+```
 
 
 # Model Diagnostics
