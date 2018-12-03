@@ -391,7 +391,37 @@ craftFeatures <- function (imputedBirthsDataset) {
 
 
 ## Cross-Validation
+```{r crossValidate}
+testSetRatio = 0.2
 
+crossValidate <- function (model1, model2, datasets) {
+  # "Usually about a 1000 is fine" - M. Lysy, Nov. 27, 2018
+  m = 1000
+
+  model1rPMSE <- vector(mode="numeric", length=m)
+  model2rPMSE <- vector(mode="numeric", length=m)
+
+  for (i in 1:m) {
+    chosenSet = datasets[[sample(length(datasets), 1)]]
+    Ntotal = nrow(data)
+    Ntest = floor(N * testSetRatio)
+    outOfSampleIndices = sample(N, Ntest)
+    sample = chosenSet[-outOfSampleIndices, ]
+    testSet = chosenSet[outOfSampleIndices, ]
+    
+    candidateModel1 = update(candidateModel1, data=sample)
+    candidateModel2 = update(candidateModel2, data=sample)
+    outOfSamplePredictions1 = predict(candidateModel1, newdata=testSet)
+    outOfSamplePredictions2 = predict(candidateModel2, newdata=testSet)
+    predictionErrors1 = (testSet$wt - outOfSamplePredictions1) ^ 2
+    predictionErrors2 = (testSet$wt - outOfSamplePredictions2) ^ 2
+    model1Errors[i] <- sqrt(sum(predictionErrors1) / Ntest)
+    model2Errors[i] <- sqrt(sum(predictionErrors2) / Ntest)
+  }
+  
+  data.frame(model1 = model1rPMSE, model2 = model2rPMSE)
+}
+```
 
 # Discussion
 
