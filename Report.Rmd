@@ -7,7 +7,7 @@ documentclass: article
 
 ```{r setup, include=FALSE}
 # Knitr Configuration
-knitr::opts_chunk$set(include=FALSE, results="hide")
+knitr::opts_chunk$set(include=TRUE, echo=FALSE, results="markup", fig.show= "asis", fig.height = 4)
 ```
 
 ```{r import}
