@@ -316,6 +316,7 @@ baseBirthWeightModelMeanAIC <- meanAIC(baseBirthWeightModel, decodedImputedBirth
 ```{r craftFeatures}
 poundsToKg <- 0.453592
 inchesToM <- 0.0254
+#https://www.mayoclinic.org/healthy-lifestyle/pregnancy-week-by-week/in-depth/pregnancy-weight-gain/art-20044360?pg=1
 underweightNormalBoundary <- 18.5
 normalOverweightBoundary <- 25
 overweightObeseBoundary <- 30
@@ -457,29 +458,31 @@ crossValidate <- function (model1, model2, datasets) {
   # "Usually about a 1000 is fine" - M. Lysy, Nov. 27, 2018
   m = 1000
 
-  model1rPMSE <- vector(mode="numeric", length=m)
-  model2rPMSE <- vector(mode="numeric", length=m)
+  model1rPMSE <- vector(mode = "numeric", length = m)
+  model2rPMSE <- vector(mode = "numeric", length = m)
 
   for (i in 1:m) {
     chosenSet = datasets[[sample(length(datasets), 1)]]
     Ntotal = nrow(data)
     Ntest = floor(N * testSetRatio)
     outOfSampleIndices = sample(N, Ntest)
-    sample = chosenSet[-outOfSampleIndices, ]
+    trainSet = chosenSet[-outOfSampleIndices, ]
     testSet = chosenSet[outOfSampleIndices, ]
     
-    candidateModel1 = update(candidateModel1, data=sample)
-    candidateModel2 = update(candidateModel2, data=sample)
-    outOfSamplePredictions1 = predict(candidateModel1, newdata=testSet)
-    outOfSamplePredictions2 = predict(candidateModel2, newdata=testSet)
+    model1 = update(model1, data = trainSet)
+    model2 = update(model2, data = trainSet)
+    outOfSamplePredictions1 = predict(model1, newdata = testSet)
+    outOfSamplePredictions2 = predict(model2, newdata = testSet)
     predictionErrors1 = (testSet$wt - outOfSamplePredictions1) ^ 2
     predictionErrors2 = (testSet$wt - outOfSamplePredictions2) ^ 2
-    model1Errors[i] <- sqrt(sum(predictionErrors1) / Ntest)
-    model2Errors[i] <- sqrt(sum(predictionErrors2) / Ntest)
+    model1rPMSE[i] <- sqrt(sum(predictionErrors1) / Ntest)
+    model2rPMSE[i] <- sqrt(sum(predictionErrors2) / Ntest)
   }
   
   data.frame(model1 = model1rPMSE, model2 = model2rPMSE)
 }
+
+crossValidate(baseBirthWeightModel, engineeredBirthWeightModel, engineeredFeatureBirths)
 ```
 
 # Discussion
