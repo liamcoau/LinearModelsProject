@@ -61,17 +61,31 @@ plot(data$gestation, data$wt)
 ```
 
 
-
 ### Outliers
+We discovered some values outside of the defined encodings. For example, in the marital column there were two 0s, which have no corresponding marital status. We overwrote those (likely) transcription errors with NAs which were later filled in with multiple imputation.
+```{r outliers}
+sum(na.omit(births$meth > 10 | births$meth < 0))
+sum(na.omit(births$feth > 10 | births$meth < 0))
+sum(na.omit(births$med > 7 | births$med < 0))
+sum(na.omit(births$fed > 7 | births$med < 0))
+sum(na.omit(births$marital > 5 | births$marital < 1))
+sum(na.omit(births$income > 9 | births$income < 0))
+sum(na.omit(births$smoke > 3 | births$smoke < 0))
+sum(na.omit(births$time > 9 | births$time < 0))
+sum(na.omit(births$number > 9 | births$number < 0))
+
+mendedBirths <- data.frame(births)
+mendedBirths[mendedBirths$marital == 0, "marital"] <- NA
+```
+
 
 ### Missing Data
 
 ```{r NAs}
-N <- nrow(data)
-round(sapply(colnames(data), function (colname) sum(is.na(data[colname])) / N), 2)
+N <- nrow(mendedBirths)
+round(sapply(colnames(mendedBirths), function (colname) sum(is.na(mendedBirths[colname])) / N), 2)
 
-nrow(na.omit(data[, !(colnames(data) %in% c("fht", "fwt", "income"))])) / N
-
+nrow(na.omit(mendedBirths[, !(colnames(mendedBirths) %in% c("fht", "fwt", "income"))])) / N
 ```
 
 ## Data Preprocessing
@@ -82,7 +96,7 @@ nrow(na.omit(data[, !(colnames(data) %in% c("fht", "fwt", "income"))])) / N
 library(mice)
 m <- 5
 
-multiplyImputedBirths <- mice(births, m = m, method = "pmm", seed = 500, printFlag = FALSE)
+multiplyImputedBirths <- mice(mendedBirths, m = m, method = "pmm", seed = 500, printFlag = FALSE)
 
 imputedBirths <- lapply(1:m, function(i) complete(multiplyImputedBirths, i))
 ```
