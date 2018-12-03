@@ -25,6 +25,7 @@ The purpose of this study was to determine what factors affect a male baby's bir
 ## Data Diagnostic
 
 ### Data Exploration
+
 Looking at the data beforehand, we tried to test if any of the variables that would be assumed to have a relationship with baby weight had a relationship in the context of the data. 
 
 ```{r 1}
@@ -33,6 +34,7 @@ pairs(births[c("wt", "mht", "mwt","time", "number")], col=adjustcolor("firebrick
 We found that the babies' weight had a positive relationship with the mothers' weight as well as with the mothers' height. We also see that the mothers' height has a positive relationship with the mothers' height.
 
 We also tried to find the distribution of the babies' weight. In doing so, we tested to see if the babies' weight followed a Normal distribution. If it did not, we would have had to apply an affine transformation to the data to make it follow a Normal distribution.
+
 ```{r 2}
 hist(births$wt, breaks=100, col = "firebrick") 
 ```
@@ -46,6 +48,7 @@ plot(births$meth, births$wt, col=adjustcolor("firebrick", 0.5), pch=16) #mother'
 However, based on the data, there was no evidence of a linear relationship between only the mothers' ethnicity and the babies' weight.
 
 Next, we tested for a relationship between parity and the babies' weight. As a mother's body adjusts to pregnancy, it would make sense for the babies' weight to be affected.
+
 ```{r 4}
 plot(births$parity, births$wt, pch=16, col="firebrick") 
 
@@ -57,6 +60,7 @@ Based on the data, we see no evidence of a linear relationship between only babi
 Finally, we tested for a relationship between the mothers' education level, fathers' education level, mothers' age at the termination of the pregnancy, and household income with the babies' weight. A household with a higher income would be able to provide more resources to a pregnant mother and would have a higher likelihood of having a healthy mother, who would likely give birth a baby with a healthy baby weight. A household with a higher income would likely have a highly educated mother, or highly educated father, or both.
 
 We also tested for a relationship between mothers' education level and fathers' education level. A mother with a lower education level, which would make sense given that the data is taken from 1960-1967, may be more inclined to marry a man with a higher education level in order to provide for herself and a future child.
+
 ```{r 5}
 plot(births$med, births$wt, col=adjustcolor("firebrick", 0.5), pch=16)
 plot(births$fed, births$wt, col=adjustcolor("firebrick", 0.5), pch=16) 
@@ -67,6 +71,7 @@ plot(births$med, births$fed, col=adjustcolor("firebrick", 0.5), pch=16)
 However, we see that none of the tested variables: mothers' education level, fathers' education level, mothers' age  at the termination of pregnancy, or household income have a linear relationship with the babies' weight.
 
 We also found that there was no a relationship between the mothers' education levels and the fathers' education level. 
+
 
 We also tried to test if any of the engineered variables: difference between father and mother height, and BMI, had a relationship with weight.
 
@@ -87,6 +92,7 @@ plot(births$fht - births$mht, births$wt, pch=16, col="firebrick")
 ```
 
 BMI, as a relatively good indicator of health, would theoretically be a good indicator of health of a newborn baby. We want to look at the mothers' BMI to see whether that would have a relationship with the baby's newborn weight.
+
 ```{r BMI}
 plot(births$mwt / I(births$mht)^2, births$wt, pch=16, col="firebrick") 
 ```
@@ -94,6 +100,7 @@ Based on the data, there does not appear to be a relationship between only the d
 
 
 We did not consider gestation as a factor of birth weight because it was not something that the couple could know at conception of the baby. 
+
 ```{r trial}
 plot(births$gestation, births$wt)
 summary(lm(wt ~ gestation, data=births)) 
@@ -102,6 +109,7 @@ We also found that gestation was very closely related to births, indicating that
 
 ### Outliers
 We discovered some values outside of the defined encodings. For example, in the marital column there were two 0s, which have no corresponding marital status. We overwrote those (likely) transcription errors with NAs which were later filled in with multiple imputation.
+
 ```{r outliers}
 #sum(na.omit(births$meth > 10 | births$meth < 0))
 #sum(na.omit(births$feth > 10 | births$meth < 0))
@@ -153,6 +161,8 @@ nrow(na.omit(mendedBirths[, !(colnames(mendedBirths) %in% c("fht", "fwt", "incom
 ## Data Preprocessing
 
 ### Filling Missing Values
+
+When looking at the data, around 40% of the entries both in father's weight and father's height were NA. The data was included and values using MICE were substituted. Income also had about 10% of entries with NA. These values, as well as any other category with NA, were substituted with MICE. The three aforementioned factors affected the baby's weight very minimally, but were included to preserve the integrity of the data. Without father height, father weight, and income, the percentage of the original data considered would be reduced to 90.3%.
 
 ```{r mice}
 library(mice)
@@ -279,6 +289,8 @@ decodeBirthVariates <- function (birthsDataset) {
 
   newDataset
 }
+
+decodedImputedBirths <- lapply(imputedBirths, decodeBirthVariates)
 ```
 
 ```{r craftFeatures}
@@ -509,6 +521,11 @@ engineeredBirthWeightModelMeanAIC <- meanAIC(
 
 ## Significance
 
+```{r leverage}
+leveragePlots(basicBirthWeightModel)
+leveragePlots(engineeredBirthWeightModel)
+
+```
 
 ## AIC
 
@@ -541,18 +558,66 @@ crossValidate <- function (model1, model2, datasets) {
     model2rPMSE[i] <- sqrt(sum(predictionErrors2) / Ntest)
   }
   
-  data.frame(model1 = model1rPMSE, model2 = model2rPMSE)
+  list(
+    rPMSEs = data.frame(model1 = model1rPMSE, model2 = model2rPMSE),
+    residuals = data.frame(
+      actual = testSet$wt,
+      model1Predictions = outOfSamplePredictions1,
+      model2Predictions = outOfSamplePredictions2,
+      model1 = outOfSamplePredictions1 - testSet$wt,
+      model2 = outOfSamplePredictions2 - testSet$wt
+    )
+  )
 }
 
-rPMSEs <- crossValidate(
+cvResults <- crossValidate(
   basicBirthWeightModel,
   engineeredBirthWeightModel,
   engineeredFeatureBirths
 )
 
+rPMSEs <- cvResults$rPMSEs
 paste(mean(rPMSEs$model1), sd(rPMSEs$model1))
 paste(mean(rPMSEs$model2), sd(rPMSEs$model2))
 boxplot(list(model1rPMSE = rPMSEs$model1, model2rPMSE = rPMSEs$model2))
+
+par(mfrow=c(2,2))
+plot(cvResults$residuals$actual, cvResults$residuals$model1)
+plot(cvResults$residuals$actual, cvResults$residuals$model2)
+plot(cvResults$residuals$model1Predictions, cvResults$residuals$model1)
+plot(cvResults$residuals$model2Predictions, cvResults$residuals$model2)
+```
+
+
+We then looked at the residual plots. Plotting residuals against fitted values, we saw evidence of the data not showing any non linear relationships in both models.
+
+```{r resid}
+library(car)
+
+residualPlot(basicBirthWeightModel, main= "Residuals vs Fitted")
+residualPlot(engineeredBirthWeightModel, main = "Residuals vs Fitted")
+```
+
+Then, by plotting the QQ-Plots of residuals of the predicted values vs actual residuals, we found that both models showed evidence of Normality, but for lighter babies, erred on the side of over-predicting their weight, and for heavier babies, erred on the side of under-predicting their weight.
+
+```{r qq}
+
+qqplot(cvResults$residuals$model1Predictions,cvResults$residuals$actual)
+abline(a = 0, b = 20, lty = 2, col = "blue")
+
+qqplot(cvResults$residuals$model2Predictions,cvResults$residuals$actual)
+abline(a = 0, b = 20, lty = 2, col = "blue")
+```
+
+By plotting the Normal QQ-Plot, we found strong evidence of Normality of the errors in both models.
+```{r qq2}
+
+qqnorm(cvResults$residuals$model1)
+abline(a = 0, b = 20, lty = 2, col = "blue")
+
+qqnorm(cvResults$residuals$model2)
+abline(a = 0, b = 20, lty = 2, col = "blue")
+
 ```
 
 # Discussion
