@@ -23,9 +23,56 @@ births <- read.csv("chds_births.csv")
 
 ### Data Exploration
 
+
+```{r 1}
+data <- read.csv("~/Downloads/chds_births.csv")
+
+#lm(wt ~ I(fht - mht), data=data)
+plot(data$fht - data$mht, data$wt)
+plot(data$meth, data$wt, col=adjustcolor("firebrick", 0.5))
+hist(data$wt, breaks=100)
+pairs(data[c("wt", "mage", "mht", "income", "number")], col=adjustcolor("firebrick", 0.5))
+plot(data$mwt / data$mht, data$wt)
+#lm(wt ~ I(mwt/mht), data=data)
+hist(data$mwt/data$mht, breaks=100)
+plot(data$parity, data$wt)
+#lm(wt ~ parity, data=data)
+plot(data$med, data$wt, col=adjustcolor("firebrick", 0.5))
+plot(data$fed, data$wt, col=adjustcolor("firebrick", 0.5))
+plot(data$income, data$wt)
+plot(data$med, data$fed, col=adjustcolor("firebrick", 0.5))
+plot(data$mage, data$wt)
+```
+
+```{r height}
+plot(data$mht, data$fht, col=adjustcolor("firebrick", 0.25))
+abline(coef=c(0, 1))
+plot(data$fht < data$mht, data$wt, col=adjustcolor("firebrick", 0.5))
+mean(na.omit(data[data$fht < data$mht, ]$wt))
+mean(na.omit(data[!(data$fht < data$mht), ]$wt))
+```
+
+```{r trial}
+summary(lm(wt ~ gestation, data=data))
+```
+
+```{r pl}
+plot(data$gestation, data$wt)
+```
+
+
+
 ### Outliers
 
 ### Missing Data
+
+```{r NAs}
+N <- nrow(data)
+round(sapply(colnames(data), function (colname) sum(is.na(data[colname])) / N), 2)
+
+nrow(na.omit(data[, !(colnames(data) %in% c("fht", "fwt", "income"))])) / N
+
+```
 
 ## Data Preprocessing
 
@@ -344,7 +391,37 @@ craftFeatures <- function (imputedBirthsDataset) {
 
 
 ## Cross-Validation
+```{r crossValidate}
+testSetRatio = 0.2
 
+crossValidate <- function (model1, model2, datasets) {
+  # "Usually about a 1000 is fine" - M. Lysy, Nov. 27, 2018
+  m = 1000
+
+  model1rPMSE <- vector(mode="numeric", length=m)
+  model2rPMSE <- vector(mode="numeric", length=m)
+
+  for (i in 1:m) {
+    chosenSet = datasets[[sample(length(datasets), 1)]]
+    Ntotal = nrow(data)
+    Ntest = floor(N * testSetRatio)
+    outOfSampleIndices = sample(N, Ntest)
+    sample = chosenSet[-outOfSampleIndices, ]
+    testSet = chosenSet[outOfSampleIndices, ]
+    
+    candidateModel1 = update(candidateModel1, data=sample)
+    candidateModel2 = update(candidateModel2, data=sample)
+    outOfSamplePredictions1 = predict(candidateModel1, newdata=testSet)
+    outOfSamplePredictions2 = predict(candidateModel2, newdata=testSet)
+    predictionErrors1 = (testSet$wt - outOfSamplePredictions1) ^ 2
+    predictionErrors2 = (testSet$wt - outOfSamplePredictions2) ^ 2
+    model1Errors[i] <- sqrt(sum(predictionErrors1) / Ntest)
+    model2Errors[i] <- sqrt(sum(predictionErrors2) / Ntest)
+  }
+  
+  data.frame(model1 = model1rPMSE, model2 = model2rPMSE)
+}
+```
 
 # Discussion
 
