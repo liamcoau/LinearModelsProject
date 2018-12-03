@@ -444,10 +444,19 @@ selectModel <- function (
     #anyNA(coef(Mmax))
   
     candidateModel = step(
-      Mmax,
-      #lm(wt ~ 1, data = dataset),
+      # lm(
+      # as.formula(paste(
+      #   predictedVar,
+      #   "~",
+      #   "(.",
+      #   Reduce(function (l, r) paste(l, r), Map(function (term) paste("-", term), excludedVars), ""),
+      #   ")"
+      # )),
+      # data=dataset
+      # ),
+      lm(wt ~ 1, data = dataset),
       scope = list(lower = M0, upper = Mmax),
-      direction = "backward",
+      direction = "both",
       trace = 0
     )
   
@@ -468,11 +477,11 @@ selectModel <- function (
 
 ```{r model1}
 basicBirthWeightModel <- selectModel(
-  engineeredFeatureBirths,
+  decodedImputedBirths,
   "wt",
-  c("gestation", "smoke", engineeredFeatures)
+  excludedVars = c("gestation", "smoke")
 )
-basicBirthWeightModelMeanAIC <- meanAIC(basicBirthWeightModel, engineeredFeatureBirths)
+basicBirthWeightModelMeanAIC <- meanAIC(basicBirthWeightModel, decodedImputedBirths)
 ```
 
 ## Candidate Model 2
@@ -502,7 +511,6 @@ engineeredBirthWeightModelMeanAIC <- meanAIC(
 
 
 ## AIC
-
 
 ## Cross-Validation
 ```{r crossValidate}
