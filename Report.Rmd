@@ -17,49 +17,88 @@ births <- read.csv("chds_births.csv")
 
 # Summary
 
+The purpose of this study was to determine what factors affect a male baby's birth weight with information readily available when the couple conceives. A sample of 1236 newborn males was conducted and information was taken via a survey of the mothers. The factors considered in this study were mother's age, mother's weight, father's ethnicity, the amount of time since the mother had stopped smoking, and parity. Furthermore, we engineered variables showing the mothers' pregnancy BMI, a smoking index to reflect the affects of smoking on the mothers' bodies, whether or not the parents were of the same ehtnicity, and the height difference between the father and the mother either because the given variates were not an accurate predictor of health, or because we thought they would also be predictors of a baby's weight. Results of the study show that ______.
+
+
 # Model Selection
 
 ## Data Diagnostic
 
 ### Data Exploration
-
+Looking at the data beforehand, we tried to test if any of the variables that would be assumed to have a relationship with baby weight had a relationship in the context of the data. 
 
 ```{r 1}
-data <- read.csv("~/Downloads/chds_births.csv")
+pairs(births[c("wt", "mht", "mwt","time", "number")], col=adjustcolor("firebrick", 0.2), pch=19)
+```
+We found that the babies' weight had a positive relationship with the mothers' weight as well as with the mothers' height. We also see that the mothers' height has a positive relationship with the mothers' height.
 
+We also tried to find the distribution of the babies' weight. In doing so, we tested to see if the babies' weight followed a Normal distribution. If it did not, we would have had to apply an affine transformation to the data to make it follow a Normal distribution.
+```{r 2}
+hist(births$wt, breaks=100, col = "firebrick") 
+```
+Looking at the data, we see that the distribution of the babies' weight is close to Normal, but has spikes in frequency in certain areas.
+
+We then decided to test the relationship between the mothers' ethnicity and the babies' weight. According to a 2009 study published in the British Journal of Nutrition, BMI was found to be an inaccurate measurement for non-white individuals. BMI, as a measure of weight proportional to the area of an individual's body, was found to differ among races. Hence, it seems to be a viable factor when considering the weight of a newborn baby.
+
+```{r 3}
+plot(births$meth, births$wt, col=adjustcolor("firebrick", 0.5), pch=16) #mother's ethnicity vs weight
+```
+However, based on the data, there was no evidence of a linear relationship between only the mothers' ethnicity and the babies' weight.
+
+Next, we tested for a relationship between parity and the babies' weight. As a mother's body adjusts to pregnancy, it would make sense for the babies' weight to be affected.
+```{r 4}
+plot(births$parity, births$wt, pch=16, col="firebrick") 
+
+round(sapply(0:13, function (parity) c(mean(births[births$parity==parity, "wt"]), sd(births[births$parity==parity, "wt"]))), 2)
+
+```
+Based on the data, we see no evidence of a linear relationship between only babies' weight and parity.
+
+Finally, we tested for a relationship between the mothers' education level, fathers' education level, mothers' age at the termination of the pregnancy, and household income with the babies' weight. A household with a higher income would be able to provide more resources to a pregnant mother and would have a higher likelihood of having a healthy mother, who would likely give birth a baby with a healthy baby weight. A household with a higher income would likely have a highly educated mother, or highly educated father, or both.
+
+We also tested for a relationship between mothers' education level and fathers' education level. A mother with a lower education level, which would make sense given that the data is taken from 1960-1967, may be more inclined to marry a man with a higher education level in order to provide for herself and a future child.
+```{r 5}
+plot(births$med, births$wt, col=adjustcolor("firebrick", 0.5), pch=16)
+plot(births$fed, births$wt, col=adjustcolor("firebrick", 0.5), pch=16) 
+plot(births$mage, births$wt, pch=16, col="firebrick") 
+plot(births$income, births$wt, pch=16, col="firebrick") 
+plot(births$med, births$fed, col=adjustcolor("firebrick", 0.5), pch=16)
+```
+However, we see that none of the tested variables: mothers' education level, fathers' education level, mothers' age  at the termination of pregnancy, or household income have a linear relationship with the babies' weight.
+
+We also found that there was no a relationship between the mothers' education levels and the fathers' education level. 
+
+We also tried to test if any of the engineered variables: difference between father and mother height, and BMI, had a relationship with weight.
+
+According to a 2011 study, it was found that a difference between parental height contributed to whether or not the mother would require an Emergency Cesarean Section (ECS). Since ECS can be used when a baby is too big for the birth canal or to save the baby in before it comes to term, there is a possibility that it is related to birth weight.
+
+```{r 2}
 #lm(wt ~ I(fht - mht), data=data)
-plot(data$fht - data$mht, data$wt)
-plot(data$meth, data$wt, col=adjustcolor("firebrick", 0.5))
-hist(data$wt, breaks=100)
-pairs(data[c("wt", "mage", "mht", "income", "number")], col=adjustcolor("firebrick", 0.5))
-plot(data$mwt / data$mht, data$wt)
-#lm(wt ~ I(mwt/mht), data=data)
-hist(data$mwt/data$mht, breaks=100)
-plot(data$parity, data$wt)
-#lm(wt ~ parity, data=data)
-plot(data$med, data$wt, col=adjustcolor("firebrick", 0.5))
-plot(data$fed, data$wt, col=adjustcolor("firebrick", 0.5))
-plot(data$income, data$wt)
-plot(data$med, data$fed, col=adjustcolor("firebrick", 0.5))
-plot(data$mage, data$wt)
-```
-
-```{r height}
-plot(data$mht, data$fht, col=adjustcolor("firebrick", 0.25))
+plot(births$mht, births$fht, col=adjustcolor("firebrick", 0.25), pch=16)
 abline(coef=c(0, 1))
-plot(data$fht < data$mht, data$wt, col=adjustcolor("firebrick", 0.5))
-mean(na.omit(data[data$fht < data$mht, ]$wt))
-mean(na.omit(data[!(data$fht < data$mht), ]$wt))
+plot(births$fht < births$mht, births$wt, col=adjustcolor("firebrick", 0.5), pch=16)
+mean(na.omit(births[births$fht < births$mht, ]$wt)) #mean for when mom is shorter than dad
+mean(na.omit(births[!(births$fht < births$mht), ]$wt)) #mean for when dad is shorter than mom
+```
+Looking at the heights of the mothers and the fathers, we see that majority of the couples had fathers who were taller than the mothers. It is also worth nothing that the mean baby weight when the father is taller than the mother is greater than the mean baby weight when the mother is taller than the father. This suggests a possible relationship between the difference in heights.
+
+``` {r diffInHeight}
+plot(births$fht - births$mht, births$wt, pch=16, col="firebrick")
 ```
 
+BMI, as a relatively good indicator of health, would theoretically be a good indicator of health of a newborn baby. We want to look at the mothers' BMI to see whether that would have a relationship with the baby's newborn weight.
+```{r BMI}
+plot(births$mwt / I(births$mht)^2, births$wt, pch=16, col="firebrick") 
+```
+Based on the data, there does not appear to be a relationship between only the difference in parental height and the babies' weight. However, there appears to be a small positive relationship between the mothers' BMI and the babies' weight.
+
+
+We did not consider gestation as a factor of birth weight because it was not something that the couple could know at conception of the baby. 
 ```{r trial}
-summary(lm(wt ~ gestation, data=data))
+plot(births$gestation, births$wt)
+summary(lm(wt ~ gestation, data=births)) 
 ```
-
-```{r pl}
-plot(data$gestation, data$wt)
-```
-
+We also found that gestation was very closely related to births, indicating that predicting gestation period is conceptually similar to predicting birth weight.
 
 ### Outliers
 We discovered some values outside of the defined encodings. For example, in the marital column there were two 0s, which have no corresponding marital status. We overwrote those (likely) transcription errors with NAs which were later filled in with multiple imputation.
@@ -84,6 +123,8 @@ mendedBirths[mendedBirths$marital == 0, "marital"] <- NA
 ```{r NAs}
 N <- nrow(mendedBirths)
 round(sapply(colnames(mendedBirths), function (colname) sum(is.na(mendedBirths[colname])) / N), 2)
+
+nrow(na.omit(mendedBirths[, !(colnames(mendedBirths) %in% c("fht", "fwt", "income"))])) / N
 
 nrow(na.omit(mendedBirths[, !(colnames(mendedBirths) %in% c("fht", "fwt", "income"))])) / N
 ```
