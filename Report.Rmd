@@ -7,7 +7,7 @@ documentclass: article
 
 ```{r setup, include=FALSE}
 # Knitr Configuration
-knitr::opts_chunk$set(include=TRUE, echo=FALSE, results="markup", fig.show= "asis", fig.height = 4)
+knitr::opts_chunk$set(cache = TRUE, include=TRUE, echo=FALSE, results="markup", fig.show= "asis", fig.height = 4)
 ```
 
 ```{r import}
@@ -45,6 +45,7 @@ We then decided to test the relationship between the mothers' ethnicity and the 
 ```{r 3}
 plot(births$meth, births$wt, col=adjustcolor("firebrick", 0.5), pch=16, main = "Mother's Ethnicity vs Birth Weight", xlab = "Mother's Ehtnicity", ylab = "Brith Weight (ounces)") 
 ```
+
 However, based on the data, there was no evidence of a linear relationship between only the mothers' ethnicity and the babies' weight.
 
 Next, we tested for a relationship between parity and the babies' weight. As a mother's body adjusts to pregnancy, it would make sense for the babies' weight to be affected.
@@ -55,6 +56,7 @@ plot(births$parity, births$wt, pch=16, col="firebrick", main = "Parity vs Birth 
 round(sapply(0:13, function (parity) c(mean(births[births$parity==parity, "wt"]), sd(births[births$parity==parity, "wt"]))), 2)
 
 ```
+
 Based on the data, we see no evidence of a linear relationship between only babies' weight and parity.
 
 Finally, we tested for a relationship between the mothers' education level, fathers' education level, mothers' age at the termination of the pregnancy, and household income with the babies' weight. A household with a higher income would be able to provide more resources to a pregnant mother and would have a higher likelihood of having a healthy mother, who would likely give birth a baby with a healthy baby weight. A household with a higher income would likely have a highly educated mother, or highly educated father, or both.
@@ -68,6 +70,7 @@ plot(births$mage, births$wt, pch=16, col="firebrick", main = "Mother's Age vs Bi
 plot(births$income, births$wt, pch=16, col="firebrick", main = "Household Income vs Birth Weight", xlab = "Household Income (USD)", ylab = "Birth Weight (ounces)") 
 plot(births$med, births$fed, col=adjustcolor("firebrick", 0.5), pch=16, main = "Mother's Ethnicity vs Father's Ethnicity", xlab = "Mother's Ethnicity", ylab = "Father's Ethnicity")
 ```
+
 However, we see that none of the tested variables: mothers' education level, fathers' education level, mothers' age  at the termination of pregnancy, or household income have a linear relationship with the babies' weight.
 
 We also found that there was no a relationship between the mothers' education levels and the fathers' education level. 
@@ -86,6 +89,7 @@ abline(coef=c(0, 1))
 #mean(na.omit(births[births$fht < births$mht, ]$wt)) #mean for when mom is shorter than dad
 #mean(na.omit(births[!(births$fht < births$mht), ]$wt)) #mean for when dad is shorter than mom
 ```
+
 Looking at the heights of the mothers and the fathers, we see that majority of the couples had fathers who were taller than the mothers. It is also worth nothing that the mean baby weight when the father is taller than the mother is greater than the mean baby weight when the mother is taller than the father. This suggests a possible relationship between the difference in heights.
 
 ```{r diffInHeight}
@@ -98,7 +102,7 @@ BMI, as a relatively good indicator of health, would theoretically be a good ind
 ```{r BMI}
 plot(births$mwt / I(births$mht)^2, births$wt, pch=16, col="firebrick", main = "Mother's BMI vs Birth Weight", xlab = "Mother's BMI (kg/m^2)", ylab = "Birth Weight (ounces)") 
 ```
-Based on the data, there appears to be a small positive relationship between the mothers' BMI and the babies' weight.
+Based on the data, there does not appear to be a relationship between only the difference in parental height and the babies' weight. However, there appears to be a small positive relationship between the mothers' BMI and the babies' weight.
 
 
 We did not consider gestation as a factor of birth weight because it was not something that the couple could know at conception of the baby. 
@@ -107,6 +111,7 @@ We did not consider gestation as a factor of birth weight because it was not som
 plot(births$gestation, births$wt, main = "Gestation Period vs Birth Weight", xlab = "Gestation Period (days)", ylab = "Birth Weight (ounces)")
 summary(lm(wt ~ gestation, data=births)) 
 ```
+
 We also found that gestation was very closely related to births, indicating that predicting gestation period is conceptually similar to predicting birth weight.
 
 ### Outliers
@@ -386,7 +391,7 @@ engineeredFeatureBirths <- lapply(imputedBirths, craftFeatures)
 
 ## Candidate Model 1
 
-### Automated Model Selection
+Model 1 is constructed using raw data with decoded categorical datasets. The automated selection process uses stpewise selection.
 
 ```{r selectModel}
 meanAIC <- function (model, datasets) mean(sapply(
@@ -467,14 +472,33 @@ basicBirthWeightModel <- selectModel(
   excludedVars = c("gestation", "smoke")
 )
 basicBirthWeightModelMeanAIC <- meanAIC(basicBirthWeightModel, decodedImputedBirths)
+summary(basicBirthWeightModel)
 ```
 
 ## Candidate Model 2
 
-### Hand-crafted Features
+Model 2 uses an engineered data, which includes the difference between mother and father's heights(htDiff), mother's (mBMI), mother's BMI category(mBMICategory), and smoking impact(smokingImpact).
 
+The mother's BMI category is defined as the following:
+\begin{center}
+\begin{tabular}{|c|c|}
+\hline
+BMI Category & Range ($kg/m^2$) \\
+\hline
+UnderWeight & <18.5 \\
+Normal & [18.5, 25) \\
+OverWeight & [25, 30] \\
+Obese & > 30 \\
+\hline
+\end{tabular}
+\end{center
 
-### Automated Model Selection
+The smoking impact is calculated as follows if $number {\neq} 0$:
+$$Smoking\ Impact =  ({2^{\gamma}}/ {\alpha}) * {e^{(-{\lambda}/{\beta})}}$$
+where ${\alpha}$ = cigaretteEffectRatio = 6 , ${\gamma}$ = numCigs, ${\lambda}$ = yearsQuit, and ${\beta}$ = impactTimeDecay = 2
+
+If $number=0$, then Smoking Impact = 0
+
 ```{r model2}
 engineeredBirthWeightModel <- selectModel(
   engineeredFeatureBirths,
@@ -487,6 +511,9 @@ engineeredBirthWeightModelMeanAIC <- meanAIC(
   engineeredBirthWeightModel,
   engineeredFeatureBirths
 )
+
+summary(engineeredBirthWeightModel)
+
 ```
 
 
@@ -494,10 +521,9 @@ engineeredBirthWeightModelMeanAIC <- meanAIC(
 
 ## Significance
 
-```{r leverage}
-#leveragePlots(basicBirthWeightModel)
-#leveragePlots(engineeredBirthWeightModel)
+## Leverage
 
+```{r leverage}
 #cook's distance vs. leverage for Model 1
 D <- cooks.distance(basicBirthWeightModel) 
 #flag some of the points
@@ -514,7 +540,7 @@ clrs[lev.ind] <- "blue"
 clrs[infl.ind] <- "red"
 par(mfrow = c(1,1), mar = c(4,4,1,1))
 cex <- .8
-plot(h, D, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage Plot for Model 1", pch = 21, bg = clrs, cex = cex, cex.axis = cex)
+plot(h, D, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage Plot for Basic Model", pch = 21, bg = clrs, cex = cex, cex.axis = cex)
 
 # average leverage
 abline(v = 2*hbar, col = "grey60", lty = 2) # 2x average leverage
@@ -536,7 +562,7 @@ clrs[lev.ind] <- "blue"
 clrs[infl.ind] <- "red"
 par(mfrow = c(1,1), mar = c(4,4,1,1))
 cex <- .8
-plot(h, D, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage Plot for Model 2", pch = 21, bg = clrs, cex = cex, cex.axis = cex)
+plot(h, D, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage Plot for Engineered Model", pch = 21, bg = clrs, cex = cex, cex.axis = cex)
 
 # average leverage
 abline(v = 2*hbar, col = "grey60", lty = 2) # 2x average leverage
@@ -544,7 +570,21 @@ legend("topleft", legend = c("High Leverage", "High Influence"), pch = 21,pt.bg 
 
 ```
 
-## AIC
+Looking at the plot of the Cook's distance vs Leverage, both models have one extremely high influential data point and about the same amount of high influential data points. This can indicate that the amount of outliers in the two datasets are around the same.
+
+## PRESS Stastic and AIC
+```{r PRESS and AIC}
+press1 <- resid(basicBirthWeightModel)/(1-hatvalues(basicBirthWeightModel)) 
+press2 <-  resid(engineeredBirthWeightModel)/(1-hatvalues(engineeredBirthWeightModel))
+AIC1 <- c("Basic", "Engineered")
+
+#display results
+disp <- rbind(AIC = c(engineeredBirthWeightModelMeanAIC, basicBirthWeightModelMeanAIC),PRESS = c(sum(press1^2), sum(press2^2)))
+colnames(disp) <- c("Basic", "Engineered")
+disp
+```
+
+Looking at the PRESS statstic and the AIC of both models, AIC is favouring the Basic Model, while the PRESS statstic favours the Engineered data. However the PRESS statstic has a larger relative difference in the two models compared to AIC, so overall the Engineered Model is preferred using these statstical analysis
 
 ## Cross-Validation
 ```{r crossValidate}
@@ -605,7 +645,6 @@ plot(cvResults$residuals$model1Predictions, cvResults$residuals$model1)
 plot(cvResults$residuals$model2Predictions, cvResults$residuals$model2)
 ```
 
-
 We then looked at the residual plots. Plotting residuals against fitted values, we saw evidence of the data not showing any non linear relationships in both models.
 
 ```{r resid}
@@ -627,6 +666,7 @@ abline(a = 0, b = 1, lty = 2, col = "red")
 ```
 
 By plotting the Normal Q-Q Plot, we found strong evidence of Normality of the errors in both models.
+
 ```{r qq2}
 
 qqnorm(cvResults$residuals$model1, main = "Normal Q-Q Plot for Model 1")
