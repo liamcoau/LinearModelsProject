@@ -14,7 +14,7 @@ knitr::opts_chunk$set(
   echo = FALSE,
   results = "markup",
   fig.show = "asis",
-  fig.height = 4,
+  fig.height = 3.5,
   fig.align = "center"
 )
 ```
@@ -391,7 +391,8 @@ hist(
   breaks = 100,
   col = "firebrick",
   main = "Frequency of Birth Weights",
-  xlab = "Birth Weight (ounces)"
+  xlab = "Birth Weight (ounces)",
+  mar = c(1, 4, 1, 2) +0.1
 ) 
 ```
 
@@ -406,8 +407,9 @@ plot(
   col = adjustcolor("firebrick", 0.5),
   pch = 16,
   main = "Mother's Ethnicity vs Birth Weight",
-  xlab = "Mother's Ehtnicity",
-  ylab = "Birth Weight (ounces)"
+  xlab = "Mother's Ethnicity",
+  ylab = "Birth Weight (ounces)",
+  mar = c(1, 4, 1, 2) +0.1
 )
 ```
 
@@ -534,8 +536,6 @@ plot(
   xlab = "Gestation Period (days)",
   ylab = "Birth Weight (ounces)"
 )
-
-summary(lm(wt ~ gestation, data=births))
 ```
 
 We also found that gestation was very closely related to births, indicating that predicting gestation period is conceptually similar to predicting birth weight.
@@ -554,7 +554,6 @@ summary(factor(births$marital))
 N <- nrow(mendedBirths)
 
 round(sapply(colnames(mendedBirths), function (colname) sum(is.na(mendedBirths[colname])) / N), 2)
-nrow(na.omit(mendedBirths[, !(colnames(mendedBirths) %in% c("fht", "fwt", "income"))])) / N
 nrow(na.omit(mendedBirths[, !(colnames(mendedBirths) %in% c("fht", "fwt", "income"))])) / N
 ```
 
@@ -646,33 +645,33 @@ clrs[lev.ind] <- "blue"
 clrs[infl.ind] <- "red"
 par(mfrow = c(1,1), mar = c(4,4,1,1))
 cex <- .8
-plot(h, D, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage Plot for Basic Model", pch = 21, bg = clrs, cex = cex, cex.axis = cex)
 
-# average leverage
-abline(v = 2*hbar, col = "grey60", lty = 2) # 2x average leverage
-legend("topleft", legend = c("High Leverage", "High Influence"), pch = 21,pt.bg = c("blue", "red"), cex = cex, pt.cex = cex)
 
 #cook's distance vs. leverage for Engineered Model
-D <- cooks.distance(engineeredBirthWeightModel) 
+D2 <- cooks.distance(engineeredBirthWeightModel) 
 #flag some of the points
-infl.ind <- which.max(D) # top influence point
-h <- hatvalues(engineeredBirthWeightModel)
-p <- length(coef(engineeredBirthWeightModel))
-n <- nobs(engineeredBirthWeightModel)
-hbar <- p/n
-lev.ind <- h > 2*hbar 
+infl.ind2 <- which.max(D2) # top influence point
+h2 <- hatvalues(engineeredBirthWeightModel)
+p2 <- length(coef(engineeredBirthWeightModel))
+n2 <- nobs(engineeredBirthWeightModel)
+hbar2 <- p2/n2
+lev.ind2 <- h2 > 2*hbar2 
 # leverage more than 2x the average
-clrs <- rep("black", len = n)
+clrs2 <- rep("black", len = n)
 
-clrs[lev.ind] <- "blue"
-clrs[infl.ind] <- "red"
+clrs2[lev.ind2] <- "blue"
+clrs2[infl.ind2] <- "red"
 par(mfrow = c(1,1), mar = c(4,4,1,1))
 cex <- .8
-plot(h, D, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage Plot for Engineered Model", pch = 21, bg = clrs, cex = cex, cex.axis = cex)
 
-# average leverage
+par(mfrow = c(1,2))
+plot(h, D, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage Plot for Basic Model", pch = 21, bg = clrs, cex = cex, cex.axis = cex)
 abline(v = 2*hbar, col = "grey60", lty = 2) # 2x average leverage
 legend("topleft", legend = c("High Leverage", "High Influence"), pch = 21,pt.bg = c("blue", "red"), cex = cex, pt.cex = cex)
+
+plot(h2, D2, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage Plot for Engineered Model", pch = 21, bg = clrs, cex = 0.5, cex.axis = cex)
+abline(v = 2*hbar2, col = "grey60", lty = 2) # 2x average leverage
+legend("topleft", legend = c("High Leverage", "High Influence"), pch = 21,pt.bg = c("blue", "red"), cex = 0.5, pt.cex = cex)
 
 ```
 
@@ -707,8 +706,8 @@ paste(mean(rPMSEs$model2), sd(rPMSEs$model2))
 boxplot(list(model1rPMSE = rPMSEs$model1, model2rPMSE = rPMSEs$model2))
 
 par(mfrow=c(1,2))
-plot(cvResults$residuals$model1Predictions, cvResults$residuals$model1,  main = "Predicted Values vs Basic Model Residuals", xlab = "Predicted Values", ylab = "Basic Model Residuals")
-plot(cvResults$residuals$model2Predictions, cvResults$residuals$model2, main = "Predicted Values vs Engineered Model Residuals", xlab = "Predicted Values", ylab = "Engineered Model Residuals")
+plot(cvResults$residuals$model1Predictions, cvResults$residuals$model1,  main = "Predicted Values vs Basic Model Res", xlab = "Predicted Values", ylab = "Basic Model Residuals", cex.main= 0.8)
+plot(cvResults$residuals$model2Predictions, cvResults$residuals$model2, main = "Predicted Values vs Engineered Model Res", xlab = "Predicted Values", ylab = "Engineered Model Residuals", cex.main=0.8)
 ```
 
 Then, by plotting the QQ-Plots of residuals of the predicted values vs actual residuals, we found that both models showed evidence of Normality, but for lighter babies, erred on the side of over-predicting their weight, and for heavier babies, erred on the side of under-predicting their weight. See Appendix Figure 1.9.
@@ -723,7 +722,7 @@ par(mfrow = c(1,2))
 qqnorm(cvResults$residuals$model1, main = "Normal Q-Q Plot for Basic")
 abline(a = 0, b = 20, lty = 2, col = "blue")
 
-qqnorm(cvResults$residuals$model2, main = "Normal Q-Q Plot for Engineered")
+qqnorm(cvResults$residuals$model2, main = "Normal Q-Q Plot for Engineered", cex.main = 0.85)
 abline(a = 0, b = 20, lty = 2, col = "blue")
 ```
 
