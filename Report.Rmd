@@ -559,7 +559,7 @@ legend("topleft", legend = c("High Leverage", "High Influence"), pch = 21,pt.bg 
 ## AIC
 
 ## Cross-Validation
-```{r crossValidate}
+```{r crossValidation}
 cvResults <- crossValidate(
   basicBirthWeightModel,
   engineeredBirthWeightModel,
