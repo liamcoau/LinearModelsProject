@@ -599,7 +599,21 @@ basicBirthWeightModel$call
 
 ## Candidate Model 2
 
-Model 2 uses an engineered data, which includes the difference between mother and father's heights(htDiff), mother's (mBMI), and smoking impact(smokingImpact).
+Model 2 uses an engineered data, which includes the difference between mother and father's heights(htDiff), mother's (mBMI), mother's BMI category(mBMICategory), and smoking impact(smokingImpact). The automated model selection processes uses stepwise selection.
+
+The mother's BMI category is defined as the following:
+\begin{center}
+\begin{tabular}{|c|c|}
+\hline
+BMI Category & Range ($kg/m^2$) \\
+\hline
+Underweight & <18.5 \\
+Normal & [18.5, 25) \\
+Overweight & [25, 30] \\
+Obese & > 30 \\
+\hline
+\end{tabular}
+\end{center}
 
 The smoking impact is calculated as follows if $number {\neq} 0$:
 $$
@@ -617,8 +631,10 @@ The model is as follows:
 engineeredBirthWeightModel <- selectModel(
   engineeredFeatureBirths,
   "wt",
-  excludedVars = c("gestation", "smoke", "time", "fht", "mBMICategory", "income", "marital", "med", "fed", "meth", "feth", "fht", "fwt"),
-  specialTerms = c("time", "income", "marital", "med", "fed", "feth", "meth", "fht", "fwt")
+  excludedVars = c("gestation", "smoke", "time", "fht", "mBMICategory", "income",
+                   "marital", "med", "fed", "meth", "feth", "fht", "fwt"),
+  specialTerms = c("mBMICategory", "time", "income", "marital", "med", "fed", 
+                   "feth", "meth", "fht", "fwt")
 )
 engineeredBirthWeightModelMeanAIC <- meanAIC(
   engineeredBirthWeightModel,
@@ -633,7 +649,7 @@ engineeredBirthWeightModel$call
 ## Coefficients 
 ## Summary Statstics
 
-```{r summary stastics}
+```{r summaryStastics}
 # residual standard error
 basicRes <- summary(basicBirthWeightModel)$sigma
 enginRes <- summary(engineeredBirthWeightModel)$sigma
@@ -646,13 +662,6 @@ enginRsquared <- summary(engineeredBirthWeightModel)$r.squared
 basicARsquared <- summary(basicBirthWeightModel)$adj.r.squared
 enginARsquared <- summary(engineeredBirthWeightModel)$adj.r.squared
 
-#coefficients
-basicCoeff <- data.frame(summary(basicBirthWeightModel)$coefficients)
-enginCoeff <- data.frame(summary(engineeredBirthWeightModel)$coefficients)
-
-format(basicCoeff, digits = 2, scientific = FALSE)
-format(enginCoeff, digits = 2, scientific = FALSE)
-
 summaryTable <- data.frame(c(basicRes, enginRes), c(basicRsquared, enginRsquared), c(basicARsquared, enginARsquared))
 colnames(summaryTable) <- c("Residual Standard Error", "R Squared", "Adjusted R Squared")
 rownames(summaryTable) <- c("Basic Model", "Engineered Model")
@@ -664,7 +673,7 @@ summaryTable
 
 ###Basic Birth Weight Model
 
-```{r plot diagnostic 1}
+```{r plotDiagnostic1}
 layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
 plot(basicBirthWeightModel, cex = 0.4, pch = 19, main = NULL)
 
@@ -672,14 +681,12 @@ plot(basicBirthWeightModel, cex = 0.4, pch = 19, main = NULL)
 
 ###Engineered Birth Model Plots
 
-```{r plot diagnostic 2}
+```{r plotDiagnostic2}
 layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
 plot(engineeredBirthWeightModel, cex = 0.4, pch = 19, main = NULL)
 ```
 
 Looking at the Residual and Fitted plot, both models do not exhibit any specific trend in the points, hence suggestign that there is a linear relationship present. Similar to the Residual plot, the Normal QQ plot also shows strong normality. However there is no significant evidence that one model exhibits better results than the other, hence additional diagnostics are required.
-
-Looking at the plot of the Cook's distance vs Leverage, both models have one extremely high influential data point and about the same amount of high influential data points. This can indicate that by removing these values, the effects on the two models are similar.
 
 ## PRESS Stastic and AIC
 ```{r PRESSandAIC}
@@ -967,6 +974,16 @@ qqplot(
 abline(a = 0, b = 1, lty = 2, col = "red")
 ```
 
+### Table 3.3
+
+```{r pValue, eval = TRUE}
+#coefficients
+basicCoeff <- data.frame(summary(basicBirthWeightModel)$coefficients)
+enginCoeff <- data.frame(summary(engineeredBirthWeightModel)$coefficients)
+
+format(basicCoeff, digits = 2, scientific = FALSE)
+format(enginCoeff, digits = 2, scientific = FALSE)
+```
 
 ## Section 4: Model Selection
 
