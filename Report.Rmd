@@ -74,7 +74,8 @@ bmi <- function (wtLbs, htIn) (wtLbs * poundsToKg) / (htIn * inchesToM)^2
 ```
 
 ```{r numCigs}
-# Roughly translate the "number" category to a floating point number of the actual number of cigarettes smoked
+# Roughly translate the "number" category to a floating point
+# number of the actual number of cigarettes smoked
 numCigs <- function (number) (number <= 4) * (5 * number - 2.5) +
                              (number > 4) * (10 * number - 25.5)
 ```
@@ -250,7 +251,6 @@ selectModel <- function (
   selectedModel = NULL
   
   for (dataset in datasets) {
-    #adjustedBirthsDataset <- birthsDataset[, !colnames(birthsDataset) %in% excludedVars]
     M0 = lm(wt ~ 1, data = dataset)
     Mmax = lm(
       formula(paste(
@@ -314,10 +314,12 @@ crossValidate <- function (model1, model2, datasets) {
   
   list(
     rPMSEs = data.frame(model1 = model1rPMSE, model2 = model2rPMSE),
+    actual = testSet$wt,
+    predictions = data.frame(
+      model1 = outOfSamplePredictions1,
+      model2 = outOfSamplePredictions2
+    ),
     residuals = data.frame(
-      actual = testSet$wt,
-      model1Predictions = outOfSamplePredictions1,
-      model2Predictions = outOfSamplePredictions2,
       model1 = outOfSamplePredictions1 - testSet$wt,
       model2 = outOfSamplePredictions2 - testSet$wt
     )
@@ -374,10 +376,10 @@ Looking at the data beforehand, we tried to test if any of the variables that wo
 
 ```{r 1}
 pairs(
-  births[c("wt", "mht", "mwt","time", "number")],
+  births[c("wt", "mht", "mwt", "time", "number")],
   col = adjustcolor("firebrick", 0.2),
   pch = 19,
-  main = "Pairs Plot"
+  main = "Fig. 1.1: Pairs Plot"
 )
 ```
 
@@ -390,9 +392,9 @@ hist(
   births$wt,
   breaks = 100,
   col = "firebrick",
-  main = "Frequency of Birth Weights",
+  main = "Fig 1.2: Frequency of Birth Weights",
   xlab = "Birth Weight (ounces)",
-  mar = c(1, 4, 1, 2) +0.1
+  mar = c(1, 4, 1, 2) + 0.1
 ) 
 ```
 
@@ -404,9 +406,9 @@ We then decided to test the relationship between the mothers' ethnicity and the 
 plot(
   births$meth,
   births$wt,
-  col = adjustcolor("firebrick", 0.5),
+  col = adjustcolor("firebrick", 0.25),
   pch = 16,
-  main = "Mother's Ethnicity vs Birth Weight",
+  main = "Fig 1.3: Mother's Ethnicity vs Birth Weight",
   xlab = "Mother's Ethnicity",
   ylab = "Birth Weight (ounces)",
   mar = c(1, 4, 1, 2) +0.1
@@ -422,8 +424,8 @@ plot(
   births$parity,
   births$wt,
   pch = 16,
-  col = "firebrick",
-  main = "Parity vs Birth Weight",
+  col = adjustcolor("firebrick", 0.25),
+  main = "Fig. 1.4: Parity vs Birth Weight",
   xlab = "Parity",
   ylab = "Birth Weight (ounces)"
 )
@@ -436,22 +438,26 @@ Finally, we tested for a relationship between the mothers' education level, fath
 We also tested for a relationship between mothers' education level and fathers' education level. A mother with a lower education level, which would make sense given that the data is taken from 1960-1967, may be more inclined to marry a man with a higher education level in order to provide for herself and a future child.
 
 ```{r 5}
-par(mfrow = c(2,2))
+par(mfrow = c(2, 2))
 plot(
   births$med,
   births$wt,
-  col = adjustcolor("firebrick", 0.5),
+  col = adjustcolor("firebrick", 0.25),
   pch = 16,
-  main = "Mother's Education vs Birth Weight",
+  cex.main = 0.75,
+  cex.lab = 0.75,
+  main = "Fig 1.5.1: Mother's Education vs Birth Weight",
   xlab = "Mother's Education",
   ylab = "Birth Weight (ounces)"
 )
 plot(
   births$fed,
   births$wt,
-  col = adjustcolor("firebrick", 0.5),
+  col = adjustcolor("firebrick", 0.25),
   pch = 16,
-  main = "Father's Education vs Birth Weight",
+  cex.main = 0.75,
+  cex.lab = 0.75,
+  main = "Fig. 1.5.2: Father's Education vs Birth Weight",
   xlab = "Father's Education",
   ylab = "Birth Weight (ounces)"
 )
@@ -459,17 +465,21 @@ plot(
   births$mage,
   births$wt,
   pch = 16,
-  col = "firebrick",
-  main = "Mother's Age vs Birth Weight",
+  cex.main = 0.75,
+  cex.lab = 0.75,
+  col = adjustcolor("firebrick", 0.25),
+  main = "Fig. 1.5.3: Mother's Age vs Birth Weight",
   xlab = " Mother's Age",
   ylab = "Birth Weight (ounces)"
-) 
+)
 plot(
   births$income,
   births$wt,
   pch = 16,
-  col = "firebrick",
-  main = "Household Income vs Birth Weight",
+  cex.main = 0.75,
+  cex.lab = 0.75,
+  col = adjustcolor("firebrick", 0.25),
+  main = "Fig. 1.5.4: Household Income vs Birth Weight",
   xlab = "Household Income (USD)",
   ylab = "Birth Weight (ounces)"
 )
@@ -500,7 +510,7 @@ plot(
   births$fht - births$mht,
   births$wt,
   pch = 16,
-  col = "firebrick",
+  col = adjustcolor("firebrick", 0.25),
   main = "Difference in Height vs Weight",
   xlab = "Difference in Height (inches)",
   ylab = "Birth Weight (ounces)"
@@ -516,7 +526,7 @@ plot(
   bmi(births$mwt, births$mht),
   births$wt,
   pch = 16,
-  col = "firebrick",
+  col = adjustcolor("firebrick", 0.25),
   main = "Mother's BMI vs Birth Weight",
   xlab = "Mother's BMI (kg/m^2)",
   ylab = "Birth Weight (ounces)"
@@ -532,6 +542,7 @@ We did not consider gestation as a factor of birth weight because it was not som
 plot(
   births$gestation,
   births$wt,
+  col = adjustcolor("firebrick", 0.25),
   main = "Gestation Period vs Birth Weight",
   xlab = "Gestation Period (days)",
   ylab = "Birth Weight (ounces)"
@@ -628,7 +639,6 @@ engineeredBirthWeightModelMeanAIC <- meanAIC(
 ## Significance
 
 ```{r leverage}
-
 #cook's distance vs. leverage for Basic Model
 D <- cooks.distance(basicBirthWeightModel) 
 #flag some of the points
@@ -643,9 +653,8 @@ clrs <- rep("black", len = n)
 
 clrs[lev.ind] <- "blue"
 clrs[infl.ind] <- "red"
-par(mfrow = c(1,1), mar = c(4,4,1,1))
+par(mfrow = c(1, 1), mar = c(4, 4, 1, 1))
 cex <- .8
-
 
 #cook's distance vs. leverage for Engineered Model
 D2 <- cooks.distance(engineeredBirthWeightModel) 
@@ -663,28 +672,41 @@ clrs2[lev.ind2] <- "blue"
 clrs2[infl.ind2] <- "red"
 par(mfrow = c(1,1), mar = c(4,4,1,1))
 cex <- .8
-
 par(mfrow = c(1,2))
 plot(h, D, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage Plot for Basic Model", pch = 21, bg = clrs, cex = cex, cex.axis = cex)
 abline(v = 2*hbar, col = "grey60", lty = 2) # 2x average leverage
+
 legend("topleft", legend = c("High Leverage", "High Influence"), pch = 21,pt.bg = c("blue", "red"), cex = cex, pt.cex = cex)
 
 plot(h2, D2, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage Plot for Engineered Model", pch = 21, bg = clrs, cex = 0.5, cex.axis = cex)
 abline(v = 2*hbar2, col = "grey60", lty = 2) # 2x average leverage
-legend("topleft", legend = c("High Leverage", "High Influence"), pch = 21,pt.bg = c("blue", "red"), cex = 0.5, pt.cex = cex)
 
+legend(
+  "topleft",
+  legend = c("High Leverage", "High Influence"),
+  pch = 21,
+  pt.bg = c("blue", "red"),
+  cex = cex,
+  pt.cex = cex
+)
 ```
 
 Looking at the plot of the Cook's distance vs Leverage, both models have one extremely high influential data point and about the same amount of high influential data points. This can indicate that the amount of outliers in the two datasets are around the same.
 
 ## PRESS Stastic and AIC
-```{r PRESS and AIC}
-press1 <- resid(basicBirthWeightModel)/(1-hatvalues(basicBirthWeightModel)) 
-press2 <-  resid(engineeredBirthWeightModel)/(1-hatvalues(engineeredBirthWeightModel))
+```{r PRESSandAIC}
+press1 <- resid(basicBirthWeightModel) / (1 - hatvalues(basicBirthWeightModel)) 
+press2 <-  resid(engineeredBirthWeightModel) / (1 - hatvalues(engineeredBirthWeightModel))
 AIC1 <- c("Basic", "Engineered")
 
 #display results
-disp <- rbind(AIC = c(engineeredBirthWeightModelMeanAIC, basicBirthWeightModelMeanAIC),PRESS = c(sum(press1^2), sum(press2^2)))
+disp <- rbind(
+  AIC = c(
+    engineeredBirthWeightModelMeanAIC,
+    basicBirthWeightModelMeanAIC),
+    PRESS = c(sum(press1^2), sum(press2^2)
+  )
+)
 colnames(disp) <- c("Basic", "Engineered")
 disp
 ```
@@ -706,8 +728,22 @@ paste(mean(rPMSEs$model2), sd(rPMSEs$model2))
 boxplot(list(model1rPMSE = rPMSEs$model1, model2rPMSE = rPMSEs$model2))
 
 par(mfrow=c(1,2))
-plot(cvResults$residuals$model1Predictions, cvResults$residuals$model1,  main = "Predicted Values vs Basic Model Res", xlab = "Predicted Values", ylab = "Basic Model Residuals", cex.main= 0.8)
-plot(cvResults$residuals$model2Predictions, cvResults$residuals$model2, main = "Predicted Values vs Engineered Model Res", xlab = "Predicted Values", ylab = "Engineered Model Residuals", cex.main=0.8)
+plot(
+  cvResults$predictions$model1,
+  cvResults$residuals$model1,
+  main = "Predicted Values vs Basic Model Res",
+  cex.main = 0.8,
+  xlab = "Predicted Values",
+  ylab = "Basic Model Residuals"
+)
+plot(
+  cvResults$predictions$model2,
+  cvResults$residuals$model2,
+  main = "Predicted Values vs Engineered Model Res",
+  cex.main = 0.8,
+  xlab = "Predicted Values",
+  ylab = "Engineered Model Residuals"
+)
 ```
 
 Then, by plotting the QQ-Plots of residuals of the predicted values vs actual residuals, we found that both models showed evidence of Normality, but for lighter babies, erred on the side of over-predicting their weight, and for heavier babies, erred on the side of under-predicting their weight. See Appendix Figure 1.9.
@@ -716,13 +752,19 @@ Then, by plotting the QQ-Plots of residuals of the predicted values vs actual re
 We then looked at the residual plots. Plotting residuals against fitted values, we saw evidence of the data not showing any non linear relationships in both models.
 
 By plotting the Normal Q-Q Plot, we found strong evidence of Normality of the errors in both models.
-```{r qq2}
-
-par(mfrow = c(1,2))
-qqnorm(cvResults$residuals$model1, main = "Normal Q-Q Plot for Basic")
+```{r qq}
+par(mfrow = c(1, 2))
+qqnorm(
+  cvResults$residuals$model1,
+  main = "Normal Q-Q Plot for Basic"
+)
 abline(a = 0, b = 20, lty = 2, col = "blue")
 
-qqnorm(cvResults$residuals$model2, main = "Normal Q-Q Plot for Engineered", cex.main = 0.85)
+qqnorm(
+  cvResults$residuals$model2,
+  main = "Normal Q-Q Plot for Engineered",
+  cex.main = 0.85
+)
 abline(a = 0, b = 20, lty = 2, col = "blue")
 ```
 
@@ -770,10 +812,14 @@ knitr::opts_chunk$set(include = TRUE, echo = TRUE, eval = FALSE)
 ```
 
 ### Chunk 8
+```{r ref.label = "selectModel"}
+```
+
+### Chunk 9
 ```{r ref.label = "crossValidate"}
 ```
 
-## Section 2: Dataset Definitions
+## Section 2: Dataset Creation
 
 ### Chunk 1
 ```{r ref.label = "import"}
@@ -840,22 +886,49 @@ Plots the birth weight against the BMI of the mother
 ```
 
 
+### Figure 1.8
+
+Plot
+```{r ref.label = "gestation"}
+```
+
+
+### Table 1.9
+
+Table
+```{r ref.label = "outliers"}
+```
+
+
+### Table 1.10
+
+Table
+```{r ref.label = "NAs"}
+```
+
+
 ### Figure 2.1
 
 Plot
-```{r ref.label = "resid"}
+```{r ref.label = "leverage"}
 ```
 
 ### Figure 2.2
 
 Plot
-```{r ref.label = "qq"}
+```{r ref.label = "PRESSandAIC"}
 ```
 
 ### Figure 2.3
 
 Plot
-```{r ref.label = "qq2"}
+```{r ref.label = "crossValidation"}
+```
+
+### Figure 2.4
+
+Plot
+```{r ref.label = "qq"}
 ```
 
 
@@ -880,8 +953,8 @@ round(
 Plot
 ```{r extraQQ, eval = TRUE}
 qqplot(
-  cvResults$residuals$model1Predictions,
-  cvResults$residuals$actual,
+  cvResults$predictions$model1,
+  cvResults$actual,
   main = "Q-Q Plot",
   xlab = "Predicted Values",
   ylab = "Actual Values"
@@ -889,8 +962,8 @@ qqplot(
 abline(a = 0, b = 1, lty = 2, col = "red")
 
 qqplot(
-  cvResults$residuals$model2Predictions,
-  cvResults$residuals$actual,
+  cvResults$predictions$model2,
+  cvResults$actual,
   main = "Q-Q Plot",
   xlab = "Predicted Values",
   ylab = "Actual Values"
@@ -899,31 +972,14 @@ abline(a = 0, b = 1, lty = 2, col = "red")
 ```
 
 
-```{r ref.label = "gestation"}
-```
+## Section 4: Model Selection
 
-
-```{r ref.label = "outliers"}
-```
-
-
-```{r ref.label = "NAs"}
-```
-
-
+### Chunk 1
 
 ```{r ref.label = "model1"}
 ```
 
-
+### Chunk 2
 
 ```{r ref.label = "model2"}
-```
-
-
-```{r ref.label = "leverage"}
-```
-
-
-```{r ref.label = "crossValidation"}
 ```
