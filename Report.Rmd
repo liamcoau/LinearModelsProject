@@ -589,7 +589,8 @@ colnames(disp) <- c("Basic", "Engineered")
 disp
 ```
 
-Looking at the PRESS statstic and the AIC of both models, AIC is favouring the Basic Model, while the PRESS statstic favours the Engineered data. However the PRESS statstic has a larger relative difference in the two models compared to AIC, so overall the Engineered Model is preferred using these statistical analysis
+Looking at the PRESS statstic and the AIC of both models, AIC is favouring the Basic Model, while the PRESS statstic favours the Engineered data. However the PRESS statstic has a larger relative difference in the two models compared to AIC, so overall the Engineered Model is preferred using these statstical analysis
+
 
 ## Cross-Validation
 ```{r crossValidation}
