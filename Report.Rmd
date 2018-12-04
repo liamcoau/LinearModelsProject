@@ -5,6 +5,7 @@ output: pdf_document
 documentclass: article
 ---
 
+
 ```{r setup, include=FALSE}
 # Knitr Configuration
 knitr::opts_chunk$set(
@@ -321,7 +322,6 @@ crossValidate <- function (model1, model2, datasets) {
 ```
 
 
-
 ```{r import}
 # Import
 births <- read.csv("chds_births.csv")
@@ -329,7 +329,7 @@ births <- read.csv("chds_births.csv")
 
 # Summary
 
-The purpose of this study was to determine what factors affect a male baby's birth weight with information readily available when the couple conceives. A sample of 1236 newborn males was conducted and information was taken via a survey of the mothers. The factors considered in this study were mother's age, mother's weight, father's ethnicity, the amount of time since the mother had stopped smoking, and parity. Furthermore, we engineered variables showing the mothers' pregnancy BMI, a smoking index to reflect the affects of smoking on the mothers' bodies, whether or not the parents were of the same ehtnicity, and the height difference between the father and the mother either because the given variates were not an accurate predictor of health, or because we thought they would also be predictors of a baby's weight. Results of the study show that ______.
+The purpose of this study was to determine what factors affect a male baby's birth weight with information readily available when the couple conceives. A sample of 1236 newborn males was conducted and information was taken via a survey of the mothers. The factors considered in this study were mother's age, mother's weight, father's ethnicity, the amount of time since the mother had stopped smoking, and parity. Furthermore, we engineered variables showing the mothers' pregnancy BMI, a smoking index to reflect the affects of smoking on the mothers' bodies, whether or not the parents were of the same ehtnicity, and the height difference between the father and the mother. These variables were created either because the given variates were not an accurate predictor of health, or because we thought they would also be predictors of a baby's weight. Results of the study show that ______.
 
 
 # Model Selection
@@ -417,8 +417,9 @@ We did not consider gestation as a factor of birth weight because it was not som
 
 ```{r trial}
 plot(births$gestation, births$wt, main = "Gestation Period vs Birth Weight", xlab = "Gestation Period (days)", ylab = "Birth Weight (ounces)")
-summary(lm(wt ~ gestation, data=births)) 
+summary(lm(wt ~ gestation, data=births))
 ```
+
 We also found that gestation was very closely related to births, indicating that predicting gestation period is conceptually similar to predicting birth weight.
 
 ### Outliers
@@ -507,10 +508,8 @@ engineeredBirthWeightModelMeanAIC <- meanAIC(
 ## Significance
 
 ```{r leverage}
-#leveragePlots(basicBirthWeightModel)
-#leveragePlots(engineeredBirthWeightModel)
 
-#cook's distance vs. leverage for Model 1
+#cook's distance vs. leverage for Basic Model
 D <- cooks.distance(basicBirthWeightModel) 
 #flag some of the points
 infl.ind <- which.max(D) # top influence point
@@ -526,13 +525,13 @@ clrs[lev.ind] <- "blue"
 clrs[infl.ind] <- "red"
 par(mfrow = c(1,1), mar = c(4,4,1,1))
 cex <- .8
-plot(h, D, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage Plot for Model 1", pch = 21, bg = clrs, cex = cex, cex.axis = cex)
+plot(h, D, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage Plot for Basic Model", pch = 21, bg = clrs, cex = cex, cex.axis = cex)
 
 # average leverage
 abline(v = 2*hbar, col = "grey60", lty = 2) # 2x average leverage
 legend("topleft", legend = c("High Leverage", "High Influence"), pch = 21,pt.bg = c("blue", "red"), cex = cex, pt.cex = cex)
 
-#cook's distance vs. leverage for Model 2
+#cook's distance vs. leverage for Engineered Model
 D <- cooks.distance(engineeredBirthWeightModel) 
 #flag some of the points
 infl.ind <- which.max(D) # top influence point
@@ -548,7 +547,7 @@ clrs[lev.ind] <- "blue"
 clrs[infl.ind] <- "red"
 par(mfrow = c(1,1), mar = c(4,4,1,1))
 cex <- .8
-plot(h, D, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage Plot for Model 2", pch = 21, bg = clrs, cex = cex, cex.axis = cex)
+plot(h, D, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage Plot for Engineered Model", pch = 21, bg = clrs, cex = cex, cex.axis = cex)
 
 # average leverage
 abline(v = 2*hbar, col = "grey60", lty = 2) # 2x average leverage
@@ -572,10 +571,11 @@ paste(mean(rPMSEs$model2), sd(rPMSEs$model2))
 boxplot(list(model1rPMSE = rPMSEs$model1, model2rPMSE = rPMSEs$model2))
 
 par(mfrow=c(2,2))
-plot(cvResults$residuals$actual, cvResults$residuals$model1)
-plot(cvResults$residuals$actual, cvResults$residuals$model2)
-plot(cvResults$residuals$model1Predictions, cvResults$residuals$model1)
-plot(cvResults$residuals$model2Predictions, cvResults$residuals$model2)
+plot(cvResults$residuals$actual, cvResults$residuals$model1, main = "Actual Residuals vs Basic Model Residuals", xlab = "Actual Residuals", ylab = "Basic Model Residuals")
+plot(cvResults$residuals$actual, cvResults$residuals$model2,  main = "Actual Residuals vs Engineered Model Residuals", xlab = "Actual Residuals", ylab = "Engineered Model Residuals")
+
+plot(cvResults$residuals$model1Predictions, cvResults$residuals$model1,  main = "Predicted Values vs Basic Model Residuals", xlab = "Predicted Values", ylab = "Basic Model Residuals")
+plot(cvResults$residuals$model2Predictions, cvResults$residuals$model2, main = "Predicted Values vs Engineered Model Residuals", xlab = "Predicted Values", ylab = "Engineered Model Residuals")
 ```
 
 
@@ -612,10 +612,10 @@ abline(a = 0, b = 1, lty = 2, col = "red")
 
 By plotting the Normal Q-Q Plot, we found strong evidence of Normality of the errors in both models.
 ```{r qq2}
-qqnorm(cvResults$residuals$model1, main = "Normal Q-Q Plot for Model 1")
+qqnorm(cvResults$residuals$model1, main = "Normal Q-Q Plot for Basic Model")
 abline(a = 0, b = 20, lty = 2, col = "blue")
 
-qqnorm(cvResults$residuals$model2, main = "Normal Q-Q Plot for Model 2")
+qqnorm(cvResults$residuals$model2, main = "Normal Q-Q Plot for Engineered Model")
 abline(a = 0, b = 20, lty = 2, col = "blue")
 ```
 
