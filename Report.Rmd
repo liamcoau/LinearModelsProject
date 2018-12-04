@@ -361,7 +361,7 @@ engineeredFeatureBirths <- lapply(imputedBirths, craftFeatures)
 
 # Summary
 
-The purpose of this study was to determine what factors affect a male baby's birth weight with information readily available when the couple conceives. A sample of 1236 newborn males was conducted and information was taken via a survey of the mothers. The factors considered in this study were mother's age, mother's weight, father's ethnicity, the amount of time since the mother had stopped smoking, and parity. Furthermore, we engineered variables showing the mothers' pregnancy BMI, a smoking index to reflect the affects of smoking on the mothers' bodies, whether or not the parents were of the same ehtnicity, and the height difference between the father and the mother. These variables were created either because the given variates were not an accurate predictor of health, or because we thought they would also be predictors of a baby's weight. Results of the study show that ______.
+The purpose of this study was to determine what factors affect a male baby's birth weight with information readily available when the couple conceives. A sample of 1236 newborn males was conducted and information was taken via a survey of the mothers. The factors considered in this study were mother's age, mother's weight, father's ethnicity, the amount of time since the mother had stopped smoking, and parity. Furthermore, we engineered variables showing the mothers' pregnancy BMI, a smoking index to reflect the affects of smoking on the mothers' bodies, whether or not the parents were of the same ethnicity, and the height difference between the father and the mother. These variables were created either because the given variates were not an accurate predictor of health, or because we thought they would also be predictors of a baby's weight. Results of the study show that ______.
 
 
 # Model Selection
@@ -407,7 +407,7 @@ plot(
   pch = 16,
   main = "Mother's Ethnicity vs Birth Weight",
   xlab = "Mother's Ehtnicity",
-  ylab = "Brith Weight (ounces)"
+  ylab = "Birth Weight (ounces)"
 )
 ```
 
@@ -568,7 +568,7 @@ When looking at the data, around 40% of the entries both in father's weight and 
 
 ## Candidate Model 1
 
-Model 1 is constructed using raw data with decoded categorical datasets. The automated selection process uses stpewise selection.
+Model 1 is constructed using raw data with decoded categorical datasets. The automated selection process uses stepwise selection.
 
 ```{r model1}
 basicBirthWeightModel <- selectModel(
@@ -590,9 +590,9 @@ The mother's BMI category is defined as the following:
 \hline
 BMI Category & Range ($kg/m^2$) \\
 \hline
-UnderWeight & <18.5 \\
+Underweight & <18.5 \\
 Normal & [18.5, 25) \\
-OverWeight & [25, 30] \\
+Overweight & [25, 30] \\
 Obese & > 30 \\
 \hline
 \end{tabular}
@@ -690,7 +690,7 @@ colnames(disp) <- c("Basic", "Engineered")
 disp
 ```
 
-Looking at the PRESS statstic and the AIC of both models, AIC is favouring the Basic Model, while the PRESS statstic favours the Engineered data. However the PRESS statstic has a larger relative difference in the two models compared to AIC, so overall the Engineered Model is preferred using these statstical analysis
+Looking at the PRESS statistic and the AIC of both models, AIC is favouring the Basic Model, while the PRESS statistic favours the Engineered data. However the PRESS statistic has a larger relative difference in the two models compared to AIC, so overall the Engineered Model is preferred using these statistical analysis
 
 
 ## Cross-Validation
@@ -800,7 +800,7 @@ knitr::opts_chunk$set(include = TRUE, echo = TRUE, eval = FALSE)
 
 ### Figure 1.1
 
-Produces a pair plot of the variables birthweight, mother height, mother weight, time (since quitting smoking), and number (number of cigarettes smoke per day while smoking)
+Produces a pair plot of the variables birth weight, mother height, mother weight, time (since quitting smoking), and number (number of cigarettes smoke per day while smoking)
 ```{r ref.label = "1"}
 ```
 
@@ -830,13 +830,13 @@ Plot
 
 ### Figure 1.6
 
-Plots the birthweight against the difference in height of the parents
+Plots the birth weight against the difference in height of the parents
 ```{r ref.label = "6"}
 ```
 
 ### Figure 1.7
 
-Plots the birthweight against the BMI of the mother
+Plots the birth weight against the BMI of the mother
 ```{r ref.label = "BMI"}
 ```
 
