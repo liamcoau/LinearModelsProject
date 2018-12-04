@@ -386,22 +386,28 @@ pairs(
 )
 ```
 
-We found that the babies' weight had a positive relationship with the mothers' weight as well as with the mothers' height. We also see that the mothers' height has a positive relationship with the mothers' height.
+We found that the babies' weight had a positive relationship with the mothers' weight as well as with the mothers' height. We also see that the mothers' weight has a positive relationship with the mothers' height.
 
-We also tried to find the distribution of the babies' weight. In doing so, we tested to see if the babies' weight followed a Normal distribution. If it did not, we would have had to apply an affine transformation to the data to make it follow a Normal distribution.
+We also tried to find the distribution of the babies' weight. In doing so, we tested to see if the babies' weight followed a Normal distribution. If it did not, we would have had to apply a transformation to the data to make it follow a Normal distribution.
 
 ```{r 2}
-hist(
+h<- hist(
   births$wt,
   breaks = 100,
+  freq = FALSE,
   col = "firebrick",
   main = "Fig 1.2: Frequency of Birth Weights",
   xlab = "Birth Weight (ounces)",
   mar = c(1, 4, 1, 2) + 0.1
 ) 
+
+curve(dnorm(x, mean(births$wt), sd(births$wt)),
+      add = TRUE,
+      lwd = 3, 
+      col = "darkblue")
 ```
 
-Looking at the data, we see that the distribution of the babies' weight is close to Normal, but has spikes in frequency in certain areas.
+Looking at the data, we see that the distribution of the babies' weight is close to Normal, but has spikes in frequency in certain areas. This likely corresponds to rounding and measurement discrepancies.
 
 We then decided to test the relationship between the mothers' ethnicity and the babies' weight. According to a 2009 study published in the British Journal of Nutrition, BMI was found to be an inaccurate measurement for non-white individuals. BMI, as a measure of weight proportional to the area of an individual's body, was found to differ among races. Hence, it seems to be a viable factor when considering the weight of a newborn baby.
 
@@ -522,7 +528,7 @@ plot(
 
 Based on the data, there does not appear to be a relationship between only the difference in parental height and the babies' weight.
 
-BMI, as a relatively good indicator of health, would theoretically be a good indicator of health of a newborn baby. We want to look at the mothers' BMI to see whether that would have a relationship with the baby's newborn weight.
+BMI, as a relatively good indicator of health, would theoretically also be a good indicator of health of a newborn baby. We want to look at the mothers' BMI to see whether that would have a relationship with the baby's newborn weight.
 
 ```{r BMI}
 plot(
@@ -539,7 +545,7 @@ plot(
 Based on the data, there appears to be a small positive relationship between the mothers' BMI and the babies' weight.
 
 
-We did not consider gestation as a factor of birth weight because it was not something that the couple could know at conception of the baby. 
+We did not consider gestation as a factor of birth weight because it was not something that the couple could know at the time of conception of the baby. 
 
 ```{r gestation}
 plot(
@@ -565,6 +571,8 @@ summary(factor(births$marital))
 
 ### Missing Data
 
+We see that 40% of the entries in both father's weight and father's height are NA, as well as 10% of the entries in income. Without father height, father weight, and income, the percentage of the original data considered would be reduced to 90.2%.
+
 ```{r NAs}
 N <- nrow(mendedBirths)
 
@@ -576,7 +584,7 @@ nrow(na.omit(mendedBirths[, !(colnames(mendedBirths) %in% c("fht", "fwt", "incom
 
 ### Filling Missing Values
 
-When looking at the data, around 40% of the entries both in father's weight and father's height were NA. The data was included and values using MICE were substituted. Income also had about 10% of entries with NA. These values, as well as any other category with NA, were substituted with MICE. The three aforementioned factors affected the baby's weight very minimally, but were included to preserve the integrity of the data. Without father height, father weight, and income, the percentage of the original data considered would be reduced to 90.3%.
+All the data was included and values using MICE were substituted. The three aforementioned factors affected the baby's weight very minimally, but were included to preserve the integrity of the data. 
 
 ## Candidate Model 1
 
@@ -660,7 +668,7 @@ layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
 plot(engineeredBirthWeightModel, which = c(2, 1), cex = 0.4, pch = 19, main = NULL)
 ```
 
-Looking at the Residual and Fitted plot, both models do not exhibit any specific trend in the points, hence suggestign that there is a linear relationship present. Similar to the Residual plot, the Normal QQ plot also shows strong normality. However there is no significant evidence that one model exhibits better results than the other, hence additional diagnostics are required.
+Looking at the Residual and Fitted plot, both models do not exhibit any specific trend in the points, hence suggesting that there is a linear relationship present. Similar to the Residual plot, the Normal Q-Q plot also shows strong Normality. However, there is no significant evidence that one model exhibits better results than the other, hence additional diagnostics are required.
 
 ## Significance
 
@@ -692,15 +700,15 @@ clrs2 <- rep("black", len = n)
 clrs2[lev.ind2] <- "blue"
 clrs2[infl.ind2] <- "red"
 par(mfrow = c(1,1), mar = c(4,4,1,1))
-cex <- .8
+
 par(mfrow = c(1,2))
 plot(h, D, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage for Basic Model", pch = 21, bg = clrs, cex.main = 0.9, cex.axis = cex)
-abline(v = 2*hbar, col = "grey60", lty = 2) # 2x average leverage
+abline(v = 2*hbar, col = "grey60", lty = 2) 
 
-legend("topleft", legend = c("High Leverage", "High Influence"), pch = 21,pt.bg = c("blue", "red"), cex = cex, pt.cex = cex)
+legend("topleft", legend = c("High Leverage", "High Influence"), pch = 21,pt.bg = c("blue", "red"), cex = cex, pt.cex = 0.8)
 
 plot(h2, D2, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage for Engineered Model", pch = 21, bg = clrs, cex.main = 0.9, cex.axis = cex)
-abline(v = 2*hbar2, col = "grey60", lty = 2) # 2x average leverage
+abline(v = 2*hbar2, col = "grey60", lty = 2) 
 
 legend(
   "topleft",
@@ -708,7 +716,7 @@ legend(
   pch = 21,
   pt.bg = c("blue", "red"),
   cex = 0.5,
-  pt.cex = 0.8
+  pt.cex = cex
 )
 ```
 
@@ -752,16 +760,18 @@ PMSETable <- data.frame(c(mean(rPMSEs$model1), sd(rPMSEs$model1)), c(mean(rPMSEs
 colnames(PMSETable) <- c("Basic Mode", "Engineered Model")
 rownames(PMSETable) <- c("Mean", "SD")
 PMSETable
-boxplot(list(model1rPMSE = rPMSEs$model1, model2rPMSE = rPMSEs$model2))
 
-par(mfrow=c(1,2))
+layout(matrix(c(1, 1, 2, 3), 2, 2, byrow = TRUE))
+boxplot(list(model1rPMSE = rPMSEs$model1, model2rPMSE = rPMSEs$model2), 
+        main = "Comparison of rPMSEs")
 plot(
   cvResults$predictions$model1,
   cvResults$residuals$model1,
   main = "Predicted Values vs Basic Model Res",
   cex.main = 0.8,
   xlab = "Predicted Values",
-  ylab = "Basic Model Residuals"
+  ylab = "Basic Model Residuals",
+  pch = 16
 )
 plot(
   cvResults$predictions$model2,
@@ -769,11 +779,12 @@ plot(
   main = "Predicted Values vs Engineered Model Res",
   cex.main = 0.8,
   xlab = "Predicted Values",
-  ylab = "Engineered Model Residuals"
+  ylab = "Engineered Model Residuals",
+  pch = 16
 )
 ```
 
-Then, by plotting the QQ-Plots of residuals of the predicted values vs actual residuals, we found that both models showed evidence of Normality, but for lighter babies, erred on the side of over-predicting their weight, and for heavier babies, erred on the side of under-predicting their weight. See Appendix Figure 1.9.
+Then, by plotting the Q-Q Plots of residuals of the predicted values vs actual residuals, we found that both models showed evidence of Normality, but for lighter babies, erred on the side of over-predicting their weight, and for heavier babies, erred on the side of under-predicting their weight. See Appendix Figure 1.9.
 
 
 We then looked at the residual plots. Plotting residuals against fitted values, we saw evidence of the data not showing any non linear relationships in both models.
@@ -785,14 +796,16 @@ par(mfrow = c(1, 2))
 qqnorm(
   cvResults$residuals$model1,
   main = "Normal Q-Q Plot for Basic",
-  cex.main = 0.85
+  cex.main = 0.85,
+  pch = 16
 )
 abline(a = 0, b = 20, lty = 2, col = "blue")
 
 qqnorm(
   cvResults$residuals$model2,
   main = "Normal Q-Q Plot for Engineered",
-  cex.main = 0.85
+  cex.main = 0.85,
+  pch = 16
 )
 abline(a = 0, b = 20, lty = 2, col = "blue")
 ```
