@@ -629,34 +629,28 @@ engineeredBirthWeightModelMeanAIC <- meanAIC(
 
 ```{r leverage}
 
-#cook's distance vs. leverage for Basic Model
+# Cook's Distance vs. Leverage for Basic Model
 D <- cooks.distance(basicBirthWeightModel) 
-#flag some of the points
-infl.ind <- which.max(D) # top influence point
+infl.ind <- which.max(D)
 h <- hatvalues(basicBirthWeightModel)
 p <- length(coef(basicBirthWeightModel))
 n <- nobs(basicBirthWeightModel)
 hbar <- p/n
 lev.ind <- h > 2*hbar 
-# leverage more than 2x the average
 clrs <- rep("black", len = n)
-
 clrs[lev.ind] <- "blue"
 clrs[infl.ind] <- "red"
 par(mfrow = c(1,1), mar = c(4,4,1,1))
 cex <- .8
 
-
-#cook's distance vs. leverage for Engineered Model
+# Cook's Distance vs. Leverage for Engineered Model
 D2 <- cooks.distance(engineeredBirthWeightModel) 
-#flag some of the points
-infl.ind2 <- which.max(D2) # top influence point
+infl.ind2 <- which.max(D2) 
 h2 <- hatvalues(engineeredBirthWeightModel)
 p2 <- length(coef(engineeredBirthWeightModel))
 n2 <- nobs(engineeredBirthWeightModel)
 hbar2 <- p2/n2
 lev.ind2 <- h2 > 2*hbar2 
-# leverage more than 2x the average
 clrs2 <- rep("black", len = n)
 
 clrs2[lev.ind2] <- "blue"
@@ -665,14 +659,13 @@ par(mfrow = c(1,1), mar = c(4,4,1,1))
 cex <- .8
 
 par(mfrow = c(1,2))
-plot(h, D, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage Plot for Basic Model", pch = 21, bg = clrs, cex = cex, cex.axis = cex)
+plot(h, D, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage for Basic Model", pch = 21, bg = clrs, cex.main = 0.9, cex.axis = cex)
 abline(v = 2*hbar, col = "grey60", lty = 2) # 2x average leverage
 legend("topleft", legend = c("High Leverage", "High Influence"), pch = 21,pt.bg = c("blue", "red"), cex = cex, pt.cex = cex)
 
-plot(h2, D2, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage Plot for Engineered Model", pch = 21, bg = clrs, cex = 0.5, cex.axis = cex)
+plot(h2, D2, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage for Engineered Model", pch = 21, bg = clrs, cex.main = 0.9, cex.axis = cex)
 abline(v = 2*hbar2, col = "grey60", lty = 2) # 2x average leverage
 legend("topleft", legend = c("High Leverage", "High Influence"), pch = 21,pt.bg = c("blue", "red"), cex = 0.5, pt.cex = cex)
-
 ```
 
 Looking at the plot of the Cook's distance vs Leverage, both models have one extremely high influential data point and about the same amount of high influential data points. This can indicate that the amount of outliers in the two datasets are around the same.
@@ -699,7 +692,11 @@ cvResults <- crossValidate(
   engineeredBirthWeightModel,
   engineeredFeatureBirths
 )
+```
 
+Based on the rPMSEs, we see that the mean for the Engineered Model is greater than that of the Basic Model, and the standard deviation of the Engineered Model is less than that of the Basic Model.
+
+```{r crossVData}
 rPMSEs <- cvResults$rPMSEs
 paste(mean(rPMSEs$model1), sd(rPMSEs$model1))
 paste(mean(rPMSEs$model2), sd(rPMSEs$model2))
@@ -719,7 +716,7 @@ By plotting the Normal Q-Q Plot, we found strong evidence of Normality of the er
 ```{r qq2}
 
 par(mfrow = c(1,2))
-qqnorm(cvResults$residuals$model1, main = "Normal Q-Q Plot for Basic")
+qqnorm(cvResults$residuals$model1, main = "Normal Q-Q Plot for Basic", cex.main = 0.85)
 abline(a = 0, b = 20, lty = 2, col = "blue")
 
 qqnorm(cvResults$residuals$model2, main = "Normal Q-Q Plot for Engineered", cex.main = 0.85)
