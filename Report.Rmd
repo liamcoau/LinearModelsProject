@@ -5,10 +5,322 @@ output: pdf_document
 documentclass: article
 ---
 
+
 ```{r setup, include=FALSE}
 # Knitr Configuration
-knitr::opts_chunk$set(include=TRUE, echo=FALSE, results="markup", fig.show= "asis", fig.height = 4)
+knitr::opts_chunk$set(
+  cache = TRUE,
+  include = TRUE,
+  echo = FALSE,
+  results = "markup",
+  fig.show = "asis",
+  fig.height = 4
+)
 ```
+
+```{r constants}
+# Define all the functions and constants used later
+
+# Category names for Ethnicity variates
+ethLabels <- c(
+  "Caucasian",
+  "Mexican",
+  "African-American",
+  "Asian",
+  "Mixed",
+  "Other"
+)
+
+# Category names for Education variates
+edLabels <- c(
+  "Elementary School",
+  "Middle School",
+  "High School",
+  "High School + Trade School",
+  "High School + Some College",
+  "College Graduate",
+  "Trade School",
+  "High School Unclear"
+)
+
+# Number of imputed datasets
+k <- 5
+
+# Unit conversion factors
+poundsToKg <- 0.453592
+inchesToM <- 0.0254
+
+# The boundaries for BMI categories
+# See this page for the source:
+# https://www.mayoclinic.org/healthy-lifestyle/pregnancy-week-by-week/in-depth/pregnancy-weight-gain/art-20044360?pg=1
+underweightNormalBoundary <- 18.5
+normalOverweightBoundary <- 25
+overweightObeseBoundary <- 30
+
+# Use test 10% for test set in cross validation
+testSetRatio = 0.1
+```
+
+```{r bmiFunctions}
+isUnderweight <- function (bmi) bmi < underweightNormalBoundary
+isNormal <- function (bmi) bmi < normalOverweightBoundary & bmi >= underweightNormalBoundary
+isOverweight <- function (bmi) bmi < overweightObeseBoundary & bmi >= normalOverweightBoundary
+isObese <- function (bmi) bmi >= overweightObeseBoundary
+
+bmi <- function (wtLbs, htIn) (wtLbs * poundsToKg) / (htIn * inchesToM)^2
+```
+
+```{r numCigs}
+# Roughly translate the "number" category to a floating point number of the actual number of cigarettes smoked
+numCigs <- function (number) (number <= 4) * (5 * number - 2.5) + (number > 4) * (10 * number - 25.5)
+```
+
+```{r decodeBirthVariates}
+# Re-encoding and labelling variates as factors
+decodeBirthVariates <- function (birthsDataset) {
+  newDataset = data.frame(birthsDataset)
+
+  newDataset$meth <- cut(
+    birthsDataset$meth,
+    breaks = c(0, 5:10), 
+    labels = ethLabels,
+    right = TRUE,
+    include.lowest= TRUE
+  )
+
+  newDataset$med <- cut(
+    birthsDataset$med,
+    breaks = 0:8, 
+    labels = edLabels,
+    right = FALSE
+  )
+
+  newDataset$feth <- cut(
+    birthsDataset$feth,
+    breaks = c(0, 5:10),
+    labels = ethLabels,
+    right = TRUE,
+    include.lowest= TRUE
+  )
+
+  newDataset$fed <- cut(
+    birthsDataset$fed,
+    breaks = 0:8, 
+    labels = edLabels,
+    right = FALSE
+  )
+
+  newDataset$smoke <- cut(
+    birthsDataset$smoke,
+    breaks = 0:4, 
+    labels = c(
+      "Never",
+      "Smokes Now",
+      "Until Pregnancy",
+      "Doesn't Smoke Anymore"
+    ),
+    right = FALSE
+  )
+
+  newDataset$marital <- cut(
+    birthsDataset$marital,
+    breaks = 0:5,
+    labels = c(
+      "Married",
+      "Legally Separated",
+      "Divorced",
+      "Widowed",
+      "Never Married"
+    )
+  )
+
+  newDataset$number <- numCigs(birthsDataset$number)
+
+  newDataset$time <- cut(
+    birthsDataset$time,
+    breaks = 0:10,
+    labels = c(
+      "Never Smoked",
+      "Still Smokes",
+      "During Pregnancy",
+      "Less Than A Year",
+      "1-2 Years",
+      "2-3 Years",
+      "3-4 Years",
+      "5-9 Years",
+      "More Than 10 Years",
+      "Quit But Don't Know When"
+    ),
+    right = FALSE
+  )
+
+  newDataset$income <- cut(
+    birthsDataset$income,
+    breaks = c(0, 1, 2, 10),
+    labels = c(
+      "Under 2500",
+      "2500-4999",
+      "5000-Over 25000"
+    ),
+    right = FALSE
+  )
+
+  newDataset
+}
+```
+
+```{r smokingImpact}
+smokingImpact <- function (time, number) {
+  cigaretteEffectRatio = 6
+  # Take the average of the bounds of the range of cigarettes smoked by a given category
+  # as the approximate exact number of cigarettes smoked per day
+  # https://www.med.uottawa.ca/sim/data/Smoking_and_Health_e.htm shows that it took a
+  # six-fold increase in the number of cigarettes smoked a day to double the impact
+  # on the likelihood of developing lung cancer. We approximate the effect of smoking
+  # on birth with this ratio too.
+  activeSmokingImpact = (number != 0) * 2^(numCigs(number) / cigaretteEffectRatio)
+  
+  impactTimeDecay = 2
+  
+  # Approximate a scalar number of years since quiting based on the categorical variable
+  yearsQuit = (time >= 3) * (-2.5 + time) + (time >= 7) * (-18.5 + 3 * time)
+  # Time = 1 or 2 are special cases with 0 decay
+  yearsQuit = yearsQuit * (time >= 3)
+  
+  decayedSmokingImpact = activeSmokingImpact * exp(-yearsQuit / impactTimeDecay)
+  
+  decayedSmokingImpact
+}
+```
+
+```{r engineeredFeatures}
+craftFeatures <- function (imputedBirthsDataset) {
+  newDataset = decodeBirthVariates(imputedBirthsDataset)
+
+  newDataset$sameEth <- factor(
+    imputedBirthsDataset$meth == imputedBirthsDataset$feth,
+    labels = c("Different", "Same")
+  )
+  # What about "Other" though?
+  
+  newDataset$htDiff <- newDataset$fht - newDataset$mht
+    
+  newDataset$lateMom <- factor(
+    newDataset$parity == 0 & newDataset$mage >= 35,
+    labels = c("Not late", "Late")
+  )
+
+  newDataset$mBMI <- bmi(newDataset$mwt, newDataset$mht)
+  
+  newDataset$mBMICategory <- factor(
+    1 * isNormal(newDataset$mBMI)
+      + 2 * isOverweight(newDataset$mBMI)
+      + 3 * isObese(newDataset$mBMI),
+    labels = c("Underweight", "Normal", "Overweight", "Obese")
+  )
+  
+  newDataset$smokingImpact <- smokingImpact(
+    imputedBirthsDataset$time,
+    imputedBirthsDataset$number
+  )
+  
+  newDataset
+}
+```
+
+```{r meanAIC}
+meanAIC <- function (model, datasets) mean(sapply(
+  datasets,
+  function (dataset) AIC(update(model, data = dataset))
+))
+```
+
+```{r selectModel}
+selectModel <- function (
+  datasets,
+  predictedVar,
+  excludedVars = c(),
+  specialTerms = c()
+) {
+  selectedModelMeanAIC = .Machine$integer.max
+  selectedModel = NULL
+  
+  for (dataset in datasets) {
+    #adjustedBirthsDataset <- birthsDataset[, !colnames(birthsDataset) %in% excludedVars]
+    M0 = lm(wt ~ 1, data = dataset)
+    Mmax = lm(
+      formula(paste(
+        predictedVar,
+        "~",
+        "(.",
+        Reduce(function (l, r) paste(l, r), Map(function (term) paste("-", term), excludedVars), ""),
+        ")^2",
+        Reduce(function (l, r) paste(l, r), Map(function (term) paste("+", term), specialTerms), "")
+      )),
+      data = dataset
+    )
+  
+    candidateModel = step(
+      lm(wt ~ 1, data = dataset),
+      scope = list(lower = M0, upper = Mmax),
+      direction = "both",
+      trace = 0
+    )
+  
+    candidateModelMeanAIC = mean(sapply(
+      datasets,
+      function (dataset) AIC(update(candidateModel, data = dataset))
+    ))
+  
+    if (candidateModelMeanAIC < selectedModelMeanAIC) {
+      selectedModel = update(candidateModel, data = dataset)
+      selectedModelMeanAIC = candidateModelMeanAIC
+    }
+  }
+  
+  selectedModel
+}
+```
+
+```{r crossValidate}
+crossValidate <- function (model1, model2, datasets) {
+  # "Usually about a thousand is fine" - M. Lysy, Nov. 27, 2018
+  m = 1000
+
+  model1rPMSE <- vector(mode = "numeric", length = m)
+  model2rPMSE <- vector(mode = "numeric", length = m)
+
+  for (i in 1:m) {
+    chosenSet = datasets[[1 + i %% k]]
+    Ntotal = nrow(chosenSet)
+    Ntest = floor(Ntotal * testSetRatio)
+    outOfSampleIndices = sample(Ntotal, Ntest)
+    trainSet = chosenSet[-outOfSampleIndices, ]
+    testSet = chosenSet[outOfSampleIndices, ]
+    
+    model1 = update(model1, data = trainSet)
+    model2 = update(model2, data = trainSet)
+    outOfSamplePredictions1 = predict(model1, newdata = testSet)
+    outOfSamplePredictions2 = predict(model2, newdata = testSet)
+    predictionErrors1 = (testSet$wt - outOfSamplePredictions1) ^ 2
+    predictionErrors2 = (testSet$wt - outOfSamplePredictions2) ^ 2
+    model1rPMSE[i] <- sqrt(sum(predictionErrors1) / Ntest)
+    model2rPMSE[i] <- sqrt(sum(predictionErrors2) / Ntest)
+  }
+  
+  list(
+    rPMSEs = data.frame(model1 = model1rPMSE, model2 = model2rPMSE),
+    residuals = data.frame(
+      actual = testSet$wt,
+      model1Predictions = outOfSamplePredictions1,
+      model2Predictions = outOfSamplePredictions2,
+      model1 = outOfSamplePredictions1 - testSet$wt,
+      model2 = outOfSamplePredictions2 - testSet$wt
+    )
+  )
+}
+```
+
 
 ```{r import}
 # Import
@@ -105,8 +417,9 @@ We did not consider gestation as a factor of birth weight because it was not som
 
 ```{r trial}
 plot(births$gestation, births$wt, main = "Gestation Period vs Birth Weight", xlab = "Gestation Period (days)", ylab = "Birth Weight (ounces)")
-summary(lm(wt ~ gestation, data=births)) 
+summary(lm(wt ~ gestation, data=births))
 ```
+
 We also found that gestation was very closely related to births, indicating that predicting gestation period is conceptually similar to predicting birth weight.
 
 ### Outliers
@@ -121,12 +434,13 @@ mendedBirths <- data.frame(births)
 mendedBirths[mendedBirths$marital == 0, "marital"] <- NA
 ```
 
-
 ### Missing Data
 
 ```{r NAs}
 N <- nrow(mendedBirths)
 round(sapply(colnames(mendedBirths), function (colname) sum(is.na(mendedBirths[colname])) / N), 2)
+
+nrow(na.omit(mendedBirths[, !(colnames(mendedBirths) %in% c("fht", "fwt", "income"))])) / N
 
 nrow(na.omit(mendedBirths[, !(colnames(mendedBirths) %in% c("fht", "fwt", "income"))])) / N
 ```
@@ -139,7 +453,6 @@ When looking at the data, around 40% of the entries both in father's weight and 
 
 ```{r mice}
 library(mice)
-k <- 5
 
 multiplyImputedBirths <- mice(mendedBirths, m = k, method = "pmm", seed = 500, printFlag = FALSE)
 
@@ -148,316 +461,14 @@ imputedBirths <- lapply(1:k, function(i) complete(multiplyImputedBirths, i))
 
 
 ### Decoding
-
-```{r preprocessData}
-numCigs <- function (number) (number <= 4) * (5 * number - 2.5) + (number > 4) * (10 * number - 25.5)
-
-# Re-encoding and labelling variates
-decodeBirthVariates <- function (birthsDataset) {
-  newDataset = data.frame(birthsDataset)
-
-  ethLabels <- c(
-    "Caucasian",
-    "Mexican",
-    "African-American",
-    "Asian",
-    "Mixed",
-    "Other"
-  )
-  edLabels <- c(
-    "Elementary School",
-    "Middle School",
-    "High School",
-    "High School + Trade School",
-    "High School + Some College",
-    "College Graduate",
-    "Trade School",
-    "High School Unclear"
-  )
-
-  newDataset$meth <- cut(
-    birthsDataset$meth,
-    breaks = c(0, 5:10), 
-    labels = ethLabels,
-    right = TRUE,
-    include.lowest= TRUE
-  )
-
-  newDataset$med <- cut(
-    birthsDataset$med,
-    breaks = 0:8, 
-    labels = edLabels,
-    right = FALSE
-  )
-
-  newDataset$feth <- cut(
-    birthsDataset$feth,
-    breaks = c(0, 5:10),
-    labels = ethLabels,
-    right = TRUE,
-    include.lowest= TRUE
-  )
-
-  newDataset$fed <- cut(
-    birthsDataset$fed,
-    breaks = 0:8, 
-    labels = edLabels,
-    right = FALSE
-  )
-
-  newDataset$smoke <- cut(
-    birthsDataset$smoke,
-    breaks = 0:4, 
-    labels = c(
-      "Never",
-      "Smokes Now",
-      "Until Pregnancy",
-      "Doesn't Smoke Anymore"
-    ),
-    right = FALSE
-  )
-
-  newDataset$marital <- cut(
-    birthsDataset$marital,
-    breaks = 0:5,
-    labels = c(
-      "Married",
-      "Legally Separated",
-      "Divorced",
-      "Widowed",
-      "Never Married"
-    )
-  )
-
-  newDataset$number <- numCigs(birthsDataset$number)
-
-  newDataset$time <- cut(
-    birthsDataset$time,
-    breaks = 0:10,
-    labels = c(
-      "Never Smoked",
-      "Still Smokes",
-      "During Pregnancy",
-      "Less Than A Year",
-      "1-2 Years",
-      "2-3 Years",
-      "3-4 Years",
-      "5-9 Years",
-      "More Than 10 Years",
-      "Quit But Don't Know When"
-    ),
-    right = FALSE
-  )
-
-  newDataset$income <- cut(
-    birthsDataset$income,
-    breaks = c(0, 1, 2, 10),
-    labels = c(
-      "Under 2500",
-      "2500-4999",
-      "5000-Over 25000"
-    ),
-    right = FALSE
-  )
-
-  newDataset
-}
-
+```{r decodeBirths}
 decodedImputedBirths <- lapply(imputedBirths, decodeBirthVariates)
-```
-
-```{r craftFeatures}
-poundsToKg <- 0.453592
-inchesToM <- 0.0254
-#https://www.mayoclinic.org/healthy-lifestyle/pregnancy-week-by-week/in-depth/pregnancy-weight-gain/art-20044360?pg=1
-underweightNormalBoundary <- 18.5
-normalOverweightBoundary <- 25
-overweightObeseBoundary <- 30
-#obeseWeightGain <- mean(c(11, 20))
-#overweightWeightGain <- mean(c(15, 25))
-#normalWeightGain <- mean(c(25, 30))
-#underweightWeightGain <- mean(c(28, 40))
-isUnderweight <- function (x) x < underweightNormalBoundary
-isNormal <- function (x) x < normalOverweightBoundary & x >= underweightNormalBoundary
-isOverweight <- function (x) x < overweightObeseBoundary & x >= normalOverweightBoundary
-isObese <- function (x) x >= overweightObeseBoundary
-
-bmi <- function (wtLbs, htIn) (wtLbs * poundsToKg) / (htIn * inchesToM)^2
-#obesePrePregnancyBMI <- function (pregnancyWt, ht) bmi(pregnancyWt - obeseWeightGain, ht)
-#overweightPrePregnancyBMI <- function (pregnancyWt, ht) bmi(pregnancyWt - overweightWeightGain, ht)
-#normalPrePregnancyBMI <- function (pregnancyWt, ht) bmi(pregnancyWt - normalWeightGain, ht)
-#underweightPrePregnancyBMI <- function (pregnancyWt, ht) bmi(pregnancyWt - underweightWeightGain, ht)
-
-prePregnancyBMI <- function (pregnancyWt, ht) {
-  attemptOrder = sample(
-    list(
-      c(obesePrePregnancyBMI, isObese),
-      c(overweightPrePregnancyBMI, isOverweight),
-      c(normalPrePregnancyBMI, isNormal),
-      c(underweightPrePregnancyBMI, isUnderweight)
-    ),
-    4
-  )
-  
-  for (bmiCategoryPair in attemptOrder) {
-    if (bmiCategoryPair[[2]](bmiCategoryPair[[1]](pregnancyWt, ht))) {
-      return(bmiCategoryPair[[1]](pregnancyWt, ht))
-    }
-  }
-}
-
-weightFromBMI <- function (prePregnancyBMI, ht) {
-  (1 / poundsToKg) * prePregnancyBMI * (ht * inchesToM)^2
-}
-
-smokingImpact <- function (time, number) {
-  cigaretteEffectRatio = 6
-  # Take the average of the bounds of the range of cigarettes smoked by a given category
-  # as the approximate exact number of cigarettes smoked per day
-  # https://www.med.uottawa.ca/sim/data/Smoking_and_Health_e.htm shows that it took a
-  # six-fold increase in the number of cigarettes smoked a day to double the impact
-  # on the likelihood of developing lung cancer. We approximate the effect of smoking
-  # on birth with this ratio too.
-  activeSmokingImpact = (number != 0) * 2^(numCigs(number) / cigaretteEffectRatio)
-  
-  impactTimeDecay = 2
-  
-  # Approximate a scalar number of years since quiting based on the categorical variable
-  yearsQuit = (time >= 3) * (-2.5 + time) + (time >= 7) * (-18.5 + 3 * time)
-  # Time = 1 or 2 are special cases with 0 decay
-  yearsQuit = yearsQuit * (time >= 3)
-  
-  decayedSmokingImpact = activeSmokingImpact * exp(-yearsQuit / impactTimeDecay)
-  
-  decayedSmokingImpact
-}
-
-craftFeatures <- function (imputedBirthsDataset) {
-  newDataset = decodeBirthVariates(imputedBirthsDataset)
-
-  newDataset$sameEth <- factor(
-    imputedBirthsDataset$meth == imputedBirthsDataset$feth,
-    labels = c("Different", "Same")
-  )
-  # What about "Other" though?
-  
-  newDataset$htDiff <- newDataset$fht - newDataset$mht
-    
-  newDataset$lateMom <- factor(
-    newDataset$parity == 0 & newDataset$mage >= 35,
-    labels = c("Not late", "Late")
-  )
-
-  newDataset$mBMI <- bmi(newDataset$mwt, newDataset$mht)
-  
-  #newDataset$mwt <- weightFromBMI(newDataset$mBMI, newDataset$mht)
-  
-  newDataset$mBMICategory <- factor(
-    1 * isNormal(newDataset$mBMI)
-      + 2 * isOverweight(newDataset$mBMI)
-      + 3 * isObese(newDataset$mBMI),
-    labels = c("Underweight", "Normal", "Overweight", "Obese")
-  )
-  
-  newDataset$smokingImpact <- smokingImpact(
-    imputedBirthsDataset$time,
-    imputedBirthsDataset$number
-  )
-  newDataset$smokingQuitCategory <- factor(
-    1 * (imputedBirthsDataset$time == 2) + 2 * (imputedBirthsDataset$time == 1),
-    labels = c("Before/Never", "During", "Continued")
-  )
-  
-  newDataset
-}
-
-engineeredFeatures <- c(
-  "sameEth",
-  "htDiff",
-  "lateMom",
-  "mBMI",
-  "mBMICategory",
-  "smokingImpact",
-  "smokingQuitCategory"
-)
-
-engineeredFeatureBirths <- lapply(imputedBirths, craftFeatures)
 ```
 
 ## Candidate Model 1
 
 ### Automated Model Selection
-
 ```{r selectModel}
-meanAIC <- function (model, datasets) mean(sapply(
-  datasets,
-  function (dataset) AIC(update(model, data = dataset))
-))
-
-selectModel <- function (
-  datasets,
-  predictedVar,
-  excludedVars = c(),
-  specialTerms = c()
-) {
-  selectedModelMeanAIC = .Machine$integer.max
-  selectedModel = NULL
-  
-  for (dataset in datasets) {
-    #adjustedBirthsDataset <- birthsDataset[, !colnames(birthsDataset) %in% excludedVars]
-    M0 = lm(wt ~ 1, data = dataset)
-    Mmax = lm(
-      formula(paste(
-        predictedVar,
-        "~",
-        "(.",
-        Reduce(function (l, r) paste(l, r), Map(function (term) paste("-", term), excludedVars), ""),
-        ")^2",
-        Reduce(function (l, r) paste(l, r), Map(function (term) paste("+", term), specialTerms), "")
-      )),
-      data = dataset
-    )
-    #Mmax <- lm(
-    #  wt ~ (. - gestation - marital - time - meth - feth - med - fed)^2 + marital + time + meth + feth + med + fed,
-    #  data = adjustedBirthsDataset
-    #)
-    #Mmax <- lm(wt ~ .^2, data = dataset)
-    
-    #checking if there are betas that are NA
-    #beta.max <- coef(Mmax)
-    #names(beta.max)[is.na(beta.max)]
-    #anyNA(coef(Mmax))
-  
-    candidateModel = step(
-      # lm(
-      # as.formula(paste(
-      #   predictedVar,
-      #   "~",
-      #   "(.",
-      #   Reduce(function (l, r) paste(l, r), Map(function (term) paste("-", term), excludedVars), ""),
-      #   ")"
-      # )),
-      # data=dataset
-      # ),
-      lm(wt ~ 1, data = dataset),
-      scope = list(lower = M0, upper = Mmax),
-      direction = "both",
-      trace = 0
-    )
-  
-    candidateModelMeanAIC = mean(sapply(
-      datasets,
-      function (dataset) AIC(update(candidateModel, data = dataset))
-    ))
-  
-    if (candidateModelMeanAIC < selectedModelMeanAIC) {
-      selectedModel = update(candidateModel, data = dataset)
-      selectedModelMeanAIC = candidateModelMeanAIC
-    }
-  }
-  
-  selectedModel
-}
 ```
 
 ```{r model1}
@@ -472,14 +483,16 @@ basicBirthWeightModelMeanAIC <- meanAIC(basicBirthWeightModel, decodedImputedBir
 ## Candidate Model 2
 
 ### Hand-crafted Features
-
+```{r craftFeatures}
+engineeredFeatureBirths <- lapply(imputedBirths, craftFeatures)
+```
 
 ### Automated Model Selection
 ```{r model2}
 engineeredBirthWeightModel <- selectModel(
   engineeredFeatureBirths,
   "wt",
-  c("gestation", "smoke", "time", "smokingQuitCategory", "fht", "mBMICategory"),
+  c("gestation", "smoke", "time", "fht", "mBMICategory"),
   c("time")#, smokingImpact:smokingQuitCategory")
   #c("smokingImpact", "mBMI", "htDiff", "sameEth",  "lateMom")
 )
@@ -545,46 +558,7 @@ legend("topleft", legend = c("High Leverage", "High Influence"), pch = 21,pt.bg 
 ## AIC
 
 ## Cross-Validation
-```{r crossValidate}
-testSetRatio = 0.1
-
-crossValidate <- function (model1, model2, datasets) {
-  # "Usually about a thousand is fine" - M. Lysy, Nov. 27, 2018
-  m = k * 1000
-
-  model1rPMSE <- vector(mode = "numeric", length = m)
-  model2rPMSE <- vector(mode = "numeric", length = m)
-
-  for (i in 1:m) {
-    chosenSet = datasets[[1 + i %% k]]
-    Ntotal = nrow(chosenSet)
-    Ntest = floor(Ntotal * testSetRatio)
-    outOfSampleIndices = sample(Ntotal, Ntest)
-    trainSet = chosenSet[-outOfSampleIndices, ]
-    testSet = chosenSet[outOfSampleIndices, ]
-    
-    model1 = update(model1, data = trainSet)
-    model2 = update(model2, data = trainSet)
-    outOfSamplePredictions1 = predict(model1, newdata = testSet)
-    outOfSamplePredictions2 = predict(model2, newdata = testSet)
-    predictionErrors1 = (testSet$wt - outOfSamplePredictions1) ^ 2
-    predictionErrors2 = (testSet$wt - outOfSamplePredictions2) ^ 2
-    model1rPMSE[i] <- sqrt(sum(predictionErrors1) / Ntest)
-    model2rPMSE[i] <- sqrt(sum(predictionErrors2) / Ntest)
-  }
-  
-  list(
-    rPMSEs = data.frame(model1 = model1rPMSE, model2 = model2rPMSE),
-    residuals = data.frame(
-      actual = testSet$wt,
-      model1Predictions = outOfSamplePredictions1,
-      model2Predictions = outOfSamplePredictions2,
-      model1 = outOfSamplePredictions1 - testSet$wt,
-      model2 = outOfSamplePredictions2 - testSet$wt
-    )
-  )
-}
-
+```{r crossValidation}
 cvResults <- crossValidate(
   basicBirthWeightModel,
   engineeredBirthWeightModel,
@@ -608,38 +582,136 @@ plot(cvResults$residuals$model2Predictions, cvResults$residuals$model2, main = "
 We then looked at the residual plots. Plotting residuals against fitted values, we saw evidence of the data not showing any non linear relationships in both models.
 
 ```{r resid}
-library(car)
+#library(car)
 
-residualPlot(basicBirthWeightModel, main= "Residuals vs Fitted")
-residualPlot(engineeredBirthWeightModel, main = "Residuals vs Fitted")
+#residualPlot(basicBirthWeightModel, main= "Residuals vs Fitted")
+#residualPlot(engineeredBirthWeightModel, main = "Residuals vs Fitted")
 ```
 
 Then, by plotting the Q-Q Plots of residuals of the predicted values vs actual residuals, we found that both models showed evidence of Normality, but for lighter babies, erred on the side of over-predicting their weight, and for heavier babies, erred on the side of under-predicting their weight.
 
 ```{r qq}
-
-qqplot(cvResults$residuals$model1Predictions,cvResults$residuals$actual, main = "Q-Q Plot", xlab = "Predicted Values", ylab = "Actual Values")
+qqplot(
+  cvResults$residuals$model1Predictions,
+  cvResults$residuals$actual,
+  main = "Q-Q Plot",
+  xlab = "Predicted Values",
+  ylab = "Actual Values"
+)
 abline(a = 0, b = 1, lty = 2, col = "red")
 
-qqplot(cvResults$residuals$model2Predictions,cvResults$residuals$actual, main = "Q-Q Plot", xlab = "Predicted Values", ylab = "Actual Values")
+qqplot(
+  cvResults$residuals$model2Predictions,
+  cvResults$residuals$actual,
+  main = "Q-Q Plot",
+  xlab = "Predicted Values",
+  ylab = "Actual Values"
+)
 abline(a = 0, b = 1, lty = 2, col = "red")
 ```
 
 By plotting the Normal Q-Q Plot, we found strong evidence of Normality of the errors in both models.
 ```{r qq2}
-
 qqnorm(cvResults$residuals$model1, main = "Normal Q-Q Plot for Basic Model")
 abline(a = 0, b = 20, lty = 2, col = "blue")
 
 qqnorm(cvResults$residuals$model2, main = "Normal Q-Q Plot for Engineered Model")
 abline(a = 0, b = 20, lty = 2, col = "blue")
-
 ```
 
 # Discussion
 
 
+\pagebreak
 
 # Appendix
-```{r, ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE, include=TRUE}
+
+```{r setupAppendix, include=FALSE}
+# Reconfigure Knitr for Appendix
+knitr::opts_chunk$set(include = TRUE, echo = TRUE, eval = FALSE)
+```
+
+## Section 1: Constants and Functions
+
+```{r ref.label = "constants"}
+```
+
+```{r ref.label = "bmiFunctions"}
+```
+
+```{r ref.label = "numCigs"}
+```
+
+```{r ref.label = "decodeBirthVariates"}
+```
+
+```{r ref.label = "smokingImpact"}
+```
+
+```{r ref.label = "engineeredFeatures"}
+```
+
+```{r ref.label = "meanAIC"}
+```
+
+```{r ref.label = "crossValidate"}
+```
+
+# Section 2: Dataset Definitions
+```{r ref.label = "import"}
+```
+
+
+# Section 3: Figures
+
+### Figure 1.1
+
+Produces a pair plot of the variables birthweight, mother height, mother weight, time (since quitting smoking), and number (number of cigarettes smoke per day while smoking)
+```{r ref.label = "1"}
+```
+
+### Figure 1.2
+
+Plot
+```{r ref.label = "2"}
+```
+
+### Figure 1.3
+
+Plot
+```{r ref.label = "3"}
+```
+
+### Figure 1.4
+
+Plot
+```{r ref.label = "4"}
+```
+
+### Figure 1.5
+
+Plot
+```{r ref.label = "5"}
+```
+
+### Figure 1.6
+
+Plot
+```{r ref.label = "6"}
+```
+
+### Figure 1.7
+
+Plots the birthweight against the difference in height of the parents
+```{r ref.label = "diffInHeight"}
+```
+
+### Figure 1.8
+
+Plots the birthweight against the BMI of the mother
+```{r ref.label = "BMI"}
+```
+
+```{r asasda}
+knitr::all_labels()
 ```
