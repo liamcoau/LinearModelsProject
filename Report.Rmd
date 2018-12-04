@@ -465,7 +465,8 @@ decodedImputedBirths <- lapply(imputedBirths, decodeBirthVariates)
 
 ## Candidate Model 1
 
-### Automated Model Selection
+Model 1 is constructed using raw data with decoded categorical datasets. The automated selection process uses stpewise selection.
+
 ```{r selectModel}
 ```
 
@@ -480,7 +481,28 @@ basicBirthWeightModelMeanAIC <- meanAIC(basicBirthWeightModel, decodedImputedBir
 
 ## Candidate Model 2
 
-### Hand-crafted Features
+Model 2 uses an engineered data, which includes the difference between mother and father's heights(htDiff), mother's (mBMI), mother's BMI category(mBMICategory), and smoking impact(smokingImpact).
+
+The mother's BMI category is defined as the following:
+\begin{center}
+\begin{tabular}{|c|c|}
+\hline
+BMI Category & Range ($kg/m^2$) \\
+\hline
+UnderWeight & <18.5 \\
+Normal & [18.5, 25) \\
+OverWeight & [25, 30] \\
+Obese & > 30 \\
+\hline
+\end{tabular}
+\end{center
+
+The smoking impact is calculated as follows if $number {\neq} 0$:
+$$Smoking\ Impact =  ({2^{\gamma}}/ {\alpha}) * {e^{(-{\lambda}/{\beta})}}$$
+where ${\alpha}$ = cigaretteEffectRatio = 6 , ${\gamma}$ = numCigs, ${\lambda}$ = yearsQuit, and ${\beta}$ = impactTimeDecay = 2
+
+If $number=0$, then Smoking Impact = 0
+
 ```{r craftFeatures}
 engineeredFeatureBirths <- lapply(imputedBirths, craftFeatures)
 ```
@@ -505,7 +527,69 @@ engineeredBirthWeightModelMeanAIC <- meanAIC(
 
 ## Significance
 
-## AIC
+```{r leverage}
+
+#cook's distance vs. leverage for Basic Model
+D <- cooks.distance(basicBirthWeightModel) 
+#flag some of the points
+infl.ind <- which.max(D) # top influence point
+h <- hatvalues(basicBirthWeightModel)
+p <- length(coef(basicBirthWeightModel))
+n <- nobs(basicBirthWeightModel)
+hbar <- p/n
+lev.ind <- h > 2*hbar 
+# leverage more than 2x the average
+clrs <- rep("black", len = n)
+
+clrs[lev.ind] <- "blue"
+clrs[infl.ind] <- "red"
+par(mfrow = c(1,1), mar = c(4,4,1,1))
+cex <- .8
+plot(h, D, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage Plot for Basic Model", pch = 21, bg = clrs, cex = cex, cex.axis = cex)
+
+# average leverage
+abline(v = 2*hbar, col = "grey60", lty = 2) # 2x average leverage
+legend("topleft", legend = c("High Leverage", "High Influence"), pch = 21,pt.bg = c("blue", "red"), cex = cex, pt.cex = cex)
+
+#cook's distance vs. leverage for Engineered Model
+D <- cooks.distance(engineeredBirthWeightModel) 
+#flag some of the points
+infl.ind <- which.max(D) # top influence point
+h <- hatvalues(engineeredBirthWeightModel)
+p <- length(coef(engineeredBirthWeightModel))
+n <- nobs(engineeredBirthWeightModel)
+hbar <- p/n
+lev.ind <- h > 2*hbar 
+# leverage more than 2x the average
+clrs <- rep("black", len = n)
+
+clrs[lev.ind] <- "blue"
+clrs[infl.ind] <- "red"
+par(mfrow = c(1,1), mar = c(4,4,1,1))
+cex <- .8
+plot(h, D, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage Plot for Engineered Model", pch = 21, bg = clrs, cex = cex, cex.axis = cex)
+
+# average leverage
+abline(v = 2*hbar, col = "grey60", lty = 2) # 2x average leverage
+legend("topleft", legend = c("High Leverage", "High Influence"), pch = 21,pt.bg = c("blue", "red"), cex = cex, pt.cex = cex)
+
+```
+
+Looking at the plot of the Cook's distance vs Leverage, both models have one extremely high influential data point and about the same amount of high influential data points. This can indicate that the amount of outliers in the two datasets are around the same.
+
+## PRESS Stastic and AIC
+```{r PRESS and AIC}
+press1 <- resid(basicBirthWeightModel)/(1-hatvalues(basicBirthWeightModel)) 
+press2 <-  resid(engineeredBirthWeightModel)/(1-hatvalues(engineeredBirthWeightModel))
+AIC1 <- c("Basic", "Engineered")
+
+#display results
+disp <- rbind(AIC = c(engineeredBirthWeightModelMeanAIC, basicBirthWeightModelMeanAIC),PRESS = c(sum(press1^2), sum(press2^2)))
+colnames(disp) <- c("Basic", "Engineered")
+disp
+```
+
+Looking at the PRESS statstic and the AIC of both models, AIC is favouring the Basic Model, while the PRESS statstic favours the Engineered data. However the PRESS statstic has a larger relative difference in the two models compared to AIC, so overall the Engineered Model is preferred using these statistical analysis
 
 ## Cross-Validation
 ```{r crossValidation}
