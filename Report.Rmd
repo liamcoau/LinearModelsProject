@@ -660,6 +660,7 @@ layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
 plot(engineeredBirthWeightModel, which = c(2, 1), cex = 0.4, pch = 19, main = NULL)
 ```
 
+Looking at the Residual and Fitted plot, both models do not exhibit any specific trend in the points, hence suggestign that there is a linear relationship present. Similar to the Residual plot, the Normal QQ plot also shows strong normality. However there is no significant evidence that one model exhibits better results than the other, hence additional diagnostics are required.
 
 ## Significance
 
@@ -711,7 +712,7 @@ legend(
 )
 ```
 
-Looking at the plot of the Cook's distance vs Leverage, both models have one extremely high influential data point and about the same amount of high influential data points. This can indicate that the amount of outliers in the two datasets are around the same.
+Looking at the plot of the Cook's distance vs Leverage, both models have one extremely high influential data point and about the same amount of high influential data points. This can indicate that by removing these values, the effects on the two models are similar.
 
 ## PRESS Stastic and AIC
 ```{r PRESSandAIC}
@@ -747,8 +748,10 @@ Based on the rPMSEs, we see that the mean for the Engineered Model is greater th
 
 ```{r crossVData}
 rPMSEs <- cvResults$rPMSEs
-paste(mean(rPMSEs$model1), sd(rPMSEs$model1))
-paste(mean(rPMSEs$model2), sd(rPMSEs$model2))
+PMSETable <- data.frame(c(mean(rPMSEs$model1), sd(rPMSEs$model1)), c(mean(rPMSEs$model2), sd(rPMSEs$model2)))
+colnames(PMSETable) <- c("Basic Mode", "Engineered Model")
+rownames(PMSETable) <- c("Mean", "SD")
+PMSETable
 boxplot(list(model1rPMSE = rPMSEs$model1, model2rPMSE = rPMSEs$model2))
 
 par(mfrow=c(1,2))
