@@ -55,6 +55,9 @@ inchesToM <- 0.0254
 underweightNormalBoundary <- 18.5
 normalOverweightBoundary <- 25
 overweightObeseBoundary <- 30
+
+# Use test 10% for test set in cross validation
+testSetRatio = 0.1
 ```
 
 ```{r bmiFunctions}
@@ -275,6 +278,45 @@ selectModel <- function (
   }
   
   selectedModel
+}
+```
+
+```{r crossValidate}
+crossValidate <- function (model1, model2, datasets) {
+  # "Usually about a thousand is fine" - M. Lysy, Nov. 27, 2018
+  m = 1000
+
+  model1rPMSE <- vector(mode = "numeric", length = m)
+  model2rPMSE <- vector(mode = "numeric", length = m)
+
+  for (i in 1:m) {
+    chosenSet = datasets[[1 + i %% k]]
+    Ntotal = nrow(chosenSet)
+    Ntest = floor(Ntotal * testSetRatio)
+    outOfSampleIndices = sample(Ntotal, Ntest)
+    trainSet = chosenSet[-outOfSampleIndices, ]
+    testSet = chosenSet[outOfSampleIndices, ]
+    
+    model1 = update(model1, data = trainSet)
+    model2 = update(model2, data = trainSet)
+    outOfSamplePredictions1 = predict(model1, newdata = testSet)
+    outOfSamplePredictions2 = predict(model2, newdata = testSet)
+    predictionErrors1 = (testSet$wt - outOfSamplePredictions1) ^ 2
+    predictionErrors2 = (testSet$wt - outOfSamplePredictions2) ^ 2
+    model1rPMSE[i] <- sqrt(sum(predictionErrors1) / Ntest)
+    model2rPMSE[i] <- sqrt(sum(predictionErrors2) / Ntest)
+  }
+  
+  list(
+    rPMSEs = data.frame(model1 = model1rPMSE, model2 = model2rPMSE),
+    residuals = data.frame(
+      actual = testSet$wt,
+      model1Predictions = outOfSamplePredictions1,
+      model2Predictions = outOfSamplePredictions2,
+      model1 = outOfSamplePredictions1 - testSet$wt,
+      model2 = outOfSamplePredictions2 - testSet$wt
+    )
+  )
 }
 ```
 
@@ -518,45 +560,6 @@ legend("topleft", legend = c("High Leverage", "High Influence"), pch = 21,pt.bg 
 
 ## Cross-Validation
 ```{r crossValidate}
-testSetRatio = 0.1
-
-crossValidate <- function (model1, model2, datasets) {
-  # "Usually about a thousand is fine" - M. Lysy, Nov. 27, 2018
-  m = 1000
-
-  model1rPMSE <- vector(mode = "numeric", length = m)
-  model2rPMSE <- vector(mode = "numeric", length = m)
-
-  for (i in 1:m) {
-    chosenSet = datasets[[1 + i %% k]]
-    Ntotal = nrow(chosenSet)
-    Ntest = floor(Ntotal * testSetRatio)
-    outOfSampleIndices = sample(Ntotal, Ntest)
-    trainSet = chosenSet[-outOfSampleIndices, ]
-    testSet = chosenSet[outOfSampleIndices, ]
-    
-    model1 = update(model1, data = trainSet)
-    model2 = update(model2, data = trainSet)
-    outOfSamplePredictions1 = predict(model1, newdata = testSet)
-    outOfSamplePredictions2 = predict(model2, newdata = testSet)
-    predictionErrors1 = (testSet$wt - outOfSamplePredictions1) ^ 2
-    predictionErrors2 = (testSet$wt - outOfSamplePredictions2) ^ 2
-    model1rPMSE[i] <- sqrt(sum(predictionErrors1) / Ntest)
-    model2rPMSE[i] <- sqrt(sum(predictionErrors2) / Ntest)
-  }
-  
-  list(
-    rPMSEs = data.frame(model1 = model1rPMSE, model2 = model2rPMSE),
-    residuals = data.frame(
-      actual = testSet$wt,
-      model1Predictions = outOfSamplePredictions1,
-      model2Predictions = outOfSamplePredictions2,
-      model1 = outOfSamplePredictions1 - testSet$wt,
-      model2 = outOfSamplePredictions2 - testSet$wt
-    )
-  )
-}
-
 cvResults <- crossValidate(
   basicBirthWeightModel,
   engineeredBirthWeightModel,
@@ -651,6 +654,8 @@ knitr::opts_chunk$set(include = TRUE, echo = TRUE, eval = FALSE)
 ```{r ref.label = "meanAIC"}
 ```
 
+```{r ref.label = "crossValidate"}
+```
 
 # Section 2: Dataset Definitions
 ```{r ref.label = "import"}
