@@ -248,7 +248,8 @@ selectModel <- function (
   datasets,
   predictedVar,
   excludedVars = c(),
-  specialTerms = c()
+  specialTerms = c(),
+  interactionTerms = c()
 ) {
   selectedModelMeanAIC = .Machine$integer.max
   selectedModel = NULL
@@ -262,10 +263,11 @@ selectModel <- function (
         "(.",
         Reduce(function (l, r) paste(l, r), Map(function (term) paste("-", term), excludedVars), ""),
         ")^2",
-        Reduce(function (l, r) paste(l, r), Map(function (term) paste("+", term), specialTerms), "")
+        Reduce(function (l, r) paste(l, r), Map(function (term) paste("+", term), specialTerms), ""),
+        Reduce(function (l, r) paste(l, r), Map(function (term) paste("-", term), interactionTerms), "")
       )),
       data = dataset
-    )
+    ) 
   
     candidateModel = step(
       lm(wt ~ 1, data = dataset),
@@ -588,7 +590,8 @@ The model is as follows:
 basicBirthWeightModel <- selectModel(
   decodedImputedBirths,
   "wt",
-  excludedVars = c("gestation", "smoke")
+  excludedVars = c("gestation", "smoke", "marital"),
+  specialTerms = c("marital")
 )
 basicBirthWeightModelMeanAIC <- meanAIC(basicBirthWeightModel, decodedImputedBirths)
 basicBirthWeightModel$call
@@ -596,22 +599,7 @@ basicBirthWeightModel$call
 
 ## Candidate Model 2
 
-Model 2 uses an engineered data, which includes the difference between mother and father's heights(htDiff), mother's (mBMI), mother's BMI category(mBMICategory), and smoking impact(smokingImpact).
-
-The mother's BMI category is defined as the following:
-
-\begin{center}
-\begin{tabular}{|c|c|}
-\hline
-BMI Category & Range ($kg/m^2$) \\
-\hline
-Underweight & <18.5 \\
-Normal & [18.5, 25) \\
-Overweight & [25, 30] \\
-Obese & > 30 \\
-\hline
-\end{tabular}
-\end{center}
+Model 2 uses an engineered data, which includes the difference between mother and father's heights(htDiff), mother's (mBMI), and smoking impact(smokingImpact).
 
 The smoking impact is calculated as follows if $number {\neq} 0$:
 $$
@@ -629,9 +617,8 @@ The model is as follows:
 engineeredBirthWeightModel <- selectModel(
   engineeredFeatureBirths,
   "wt",
-  c("gestation", "smoke", "time", "fht", "mBMICategory"),
-  c("time")#, smokingImpact:smokingQuitCategory")
-  #c("smokingImpact", "mBMI", "htDiff", "sameEth",  "lateMom")
+  excludedVars = c("gestation", "smoke", "time", "fht", "mBMICategory", "income", "marital", "med", "fed", "meth", "feth", "fht", "fwt"),
+  specialTerms = c("time", "income", "marital", "med", "fed", "feth", "meth", "fht", "fwt")
 )
 engineeredBirthWeightModelMeanAIC <- meanAIC(
   engineeredBirthWeightModel,
@@ -643,13 +630,43 @@ engineeredBirthWeightModel$call
 
 # Model Diagnostics
 
+## Coefficients 
+## Summary Statstics
+
+```{r summary stastics}
+# residual standard error
+basicRes <- summary(basicBirthWeightModel)$sigma
+enginRes <- summary(engineeredBirthWeightModel)$sigma
+
+#R squared calculation
+basicRsquared <- summary(basicBirthWeightModel)$r.squared
+enginRsquared <- summary(engineeredBirthWeightModel)$r.squared
+
+#R squared adjusted
+basicARsquared <- summary(basicBirthWeightModel)$adj.r.squared
+enginARsquared <- summary(engineeredBirthWeightModel)$adj.r.squared
+
+#coefficients
+basicCoeff <- data.frame(summary(basicBirthWeightModel)$coefficients)
+enginCoeff <- data.frame(summary(engineeredBirthWeightModel)$coefficients)
+
+format(basicCoeff, digits = 2, scientific = FALSE)
+format(enginCoeff, digits = 2, scientific = FALSE)
+
+summaryTable <- data.frame(c(basicRes, enginRes), c(basicRsquared, enginRsquared), c(basicARsquared, enginARsquared))
+colnames(summaryTable) <- c("Residual Standard Error", "R Squared", "Adjusted R Squared")
+rownames(summaryTable) <- c("Basic Model", "Engineered Model")
+summaryTable
+
+```
+
 ## Plot Diagnostic
 
 ###Basic Birth Weight Model
 
 ```{r plot diagnostic 1}
 layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
-plot(basicBirthWeightModel, which = c(2, 1), cex = 0.4, pch = 19, main = NULL)
+plot(basicBirthWeightModel, cex = 0.4, pch = 19, main = NULL)
 
 ```
 
@@ -657,60 +674,10 @@ plot(basicBirthWeightModel, which = c(2, 1), cex = 0.4, pch = 19, main = NULL)
 
 ```{r plot diagnostic 2}
 layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
-plot(engineeredBirthWeightModel, which = c(2, 1), cex = 0.4, pch = 19, main = NULL)
+plot(engineeredBirthWeightModel, cex = 0.4, pch = 19, main = NULL)
 ```
 
 Looking at the Residual and Fitted plot, both models do not exhibit any specific trend in the points, hence suggestign that there is a linear relationship present. Similar to the Residual plot, the Normal QQ plot also shows strong normality. However there is no significant evidence that one model exhibits better results than the other, hence additional diagnostics are required.
-
-## Significance
-
-```{r leverage}
-# Cook's Distance vs. Leverage for Basic Model
-D <- cooks.distance(basicBirthWeightModel) 
-infl.ind <- which.max(D)
-h <- hatvalues(basicBirthWeightModel)
-p <- length(coef(basicBirthWeightModel))
-n <- nobs(basicBirthWeightModel)
-hbar <- p/n
-lev.ind <- h > 2*hbar 
-clrs <- rep("black", len = n)
-clrs[lev.ind] <- "blue"
-clrs[infl.ind] <- "red"
-par(mfrow = c(1, 1), mar = c(4, 4, 1, 1))
-cex <- .8
-
-# Cook's Distance vs. Leverage for Engineered Model
-D2 <- cooks.distance(engineeredBirthWeightModel) 
-infl.ind2 <- which.max(D2) 
-h2 <- hatvalues(engineeredBirthWeightModel)
-p2 <- length(coef(engineeredBirthWeightModel))
-n2 <- nobs(engineeredBirthWeightModel)
-hbar2 <- p2/n2
-lev.ind2 <- h2 > 2*hbar2 
-clrs2 <- rep("black", len = n)
-
-clrs2[lev.ind2] <- "blue"
-clrs2[infl.ind2] <- "red"
-par(mfrow = c(1,1), mar = c(4,4,1,1))
-cex <- .8
-par(mfrow = c(1,2))
-plot(h, D, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage for Basic Model", pch = 21, bg = clrs, cex.main = 0.9, cex.axis = cex)
-abline(v = 2*hbar, col = "grey60", lty = 2) # 2x average leverage
-
-legend("topleft", legend = c("High Leverage", "High Influence"), pch = 21,pt.bg = c("blue", "red"), cex = cex, pt.cex = cex)
-
-plot(h2, D2, xlab = "Leverage", ylab = "Cook's Influence Measure", main = "Leverage for Engineered Model", pch = 21, bg = clrs, cex.main = 0.9, cex.axis = cex)
-abline(v = 2*hbar2, col = "grey60", lty = 2) # 2x average leverage
-
-legend(
-  "topleft",
-  legend = c("High Leverage", "High Influence"),
-  pch = 21,
-  pt.bg = c("blue", "red"),
-  cex = 0.5,
-  pt.cex = 0.8
-)
-```
 
 Looking at the plot of the Cook's distance vs Leverage, both models have one extremely high influential data point and about the same amount of high influential data points. This can indicate that by removing these values, the effects on the two models are similar.
 
