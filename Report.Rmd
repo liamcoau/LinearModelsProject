@@ -3,12 +3,15 @@ title: "Predicting Newborn Weight"
 author: Liam Coleman-Aulenbach, Venessa Keung, Lucy Wang
 output: pdf_document
 documentclass: article
+header-includes:
+  - \geometry{margin=0.8in}
 ---
 
 
 ```{r setup, include = FALSE}
 # Knitr Configuration
 knitr::opts_chunk$set(
+  comment = NA,
   cache = TRUE,
   include = TRUE,
   echo = FALSE,
@@ -438,7 +441,7 @@ Finally, we tested for a relationship between the mothers' education level, fath
 We also tested for a relationship between mothers' education level and fathers' education level. A mother with a lower education level, which would make sense given that the data is taken from 1960-1967, may be more inclined to marry a man with a higher education level in order to provide for herself and a future child.
 
 ```{r 5}
-par(mfrow = c(2, 2))
+par(mfrow = c(1, 2))
 plot(
   births$med,
   births$wt,
@@ -545,7 +548,8 @@ plot(
   col = adjustcolor("firebrick", 0.25),
   main = "Gestation Period vs Birth Weight",
   xlab = "Gestation Period (days)",
-  ylab = "Birth Weight (ounces)"
+  ylab = "Birth Weight (ounces)",
+  pch = 16
 )
 ```
 
@@ -574,11 +578,11 @@ nrow(na.omit(mendedBirths[, !(colnames(mendedBirths) %in% c("fht", "fwt", "incom
 
 When looking at the data, around 40% of the entries both in father's weight and father's height were NA. The data was included and values using MICE were substituted. Income also had about 10% of entries with NA. These values, as well as any other category with NA, were substituted with MICE. The three aforementioned factors affected the baby's weight very minimally, but were included to preserve the integrity of the data. Without father height, father weight, and income, the percentage of the original data considered would be reduced to 90.3%.
 
-### Decoding
-
 ## Candidate Model 1
 
 Model 1 is constructed using raw data with decoded categorical datasets. The automated selection process uses stepwise selection.
+
+The model is as follows:
 
 ```{r model1}
 basicBirthWeightModel <- selectModel(
@@ -587,6 +591,7 @@ basicBirthWeightModel <- selectModel(
   excludedVars = c("gestation", "smoke")
 )
 basicBirthWeightModelMeanAIC <- meanAIC(basicBirthWeightModel, decodedImputedBirths)
+basicBirthWeightModel$call
 ```
 
 ## Candidate Model 2
@@ -617,6 +622,7 @@ Smoking\ Impact = \begin{cases}
 $$
 where ${\alpha}$ = cigaretteEffectRatio = 6 , ${\gamma}$ = numCigs, ${\lambda}$ = yearsQuit, and ${\beta}$ = impactTimeDecay = 2
 
+The model is as follows:
 
 ### Automated Model Selection
 ```{r model2}
@@ -631,10 +637,29 @@ engineeredBirthWeightModelMeanAIC <- meanAIC(
   engineeredBirthWeightModel,
   engineeredFeatureBirths
 )
+engineeredBirthWeightModel$call
 ```
 
 
 # Model Diagnostics
+
+## Plot Diagnostic
+
+###Basic Birth Weight Model
+
+```{r plot diagnostic 1}
+layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
+plot(basicBirthWeightModel, which = c(2, 1), cex = 0.4, pch = 19, main = NULL)
+
+```
+
+###Engineered Birth Model Plots
+
+```{r plot diagnostic 2}
+layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
+plot(engineeredBirthWeightModel, which = c(2, 1), cex = 0.4, pch = 19, main = NULL)
+```
+
 
 ## Significance
 
