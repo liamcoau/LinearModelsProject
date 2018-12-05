@@ -707,7 +707,7 @@ engineeredBirthWeightModel$call
 ## Summary Statistics
 
 #### Table 2.1: Comparison of Model Fits
-```{r summaryStastics}
+```{r summaryStatistics}
 # residual standard error
 basicRes <- summary(basicBirthWeightModel)$sigma
 enginRes <- summary(engineeredBirthWeightModel)$sigma
@@ -804,7 +804,16 @@ Based on the rPMSEs, we saw that the mean for the Engineered Model was greater t
 #### Table 2.5: Comparison of Models' rPMSE
 ```{r crossVData}
 rPMSEs <- cvResults$rPMSEs
-PMSETable <- data.frame(c(mean(rPMSEs$model1), sd(rPMSEs$model1)), c(mean(rPMSEs$model2), sd(rPMSEs$model2)))
+PMSETable <- data.frame(
+  c(
+    mean(rPMSEs$model1),
+    sd(rPMSEs$model1)
+  ),
+  c(
+    mean(rPMSEs$model2),
+    sd(rPMSEs$model2)
+  )
+)
 colnames(PMSETable) <- c("Basic Model", "Engineered Model")
 rownames(PMSETable) <- c("Mean", "SD")
 PMSETable
@@ -1208,7 +1217,7 @@ plot(engineeredBirthWeightModel, cex = 0.4, which = c(4, 4), pch = 19, lwd = 2, 
 
 Produces a summary table of the Basic Model.
 ```{r pValue1, eval = TRUE}
-#Basic coefficients
+# Basic coefficients
 basicCoeff <- data.frame(summary(basicBirthWeightModel)$coefficients)
 
 format(round(basicCoeff, 3), digits = 2, scientific = FALSE)
@@ -1218,7 +1227,7 @@ format(round(basicCoeff, 3), digits = 2, scientific = FALSE)
 
 Produces a summary table of the Engineered Model. Appears in Discussion.
 ```{r pValue2, eval = TRUE}
-#Engineered coefficients
+# Engineered coefficients
 enginCoeff <- data.frame(summary(engineeredBirthWeightModel)$coefficients)
 format(round(enginCoeff, 3), digits = 2, scientific = FALSE)
 ```
@@ -1245,19 +1254,19 @@ percentTime
 
 ### Chunk 1
 
-Returns the best model as chosen by automated model selection. Discussed and appears in Candidate Model 1.
+Finds the best model as chosen by automated model selection on the basic dataset. Discussed and executes in the Candidate Model 1 section.
 ```{r ref.label = "model1"}
 ```
 
 ### Chunk 2
 
-Returns the best model including the engineered variables as chosen by automated model selection. Discussed and appears in Candidated Model 2.
+Finds the best model including via automated model selection on dataset with added engineered features. Discussed and executes in the Candidated Model 2 section.
 ```{r ref.label = "model2"}
 ```
 
 ### Chunk 3
 
-Executes cross validation to compare candidate models. Appears in Cross Validation.
+Performs cross-validation to compare candidate models. Executes in the Cross Validation section.
 ```{r ref.label = "crossValidation"}
 ```
 
