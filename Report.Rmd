@@ -1134,20 +1134,20 @@ Produces a table of the percentage of NAs in the dataset by variable. Appears in
 
 ### Table 2.1
 
-Table
+Produces a table of Residual Standard Error, $R^2$ and $R^2$ adjusted values for both models. Appears in Model Diagnostics.
 ```{r ref.label = "summaryStatistics"}
 ```
 
 ### Figure 2.2
 
-Plot
+Produces a plot of residuals for the Basic Model. Appears in Diagnostic Plots.
 ```{r ref.label = "plotDiagnostic1"}
 ```
 
 
 ### Figure 2.3
 
-Plot
+Produces a plot of residuals for the Engineered Model. Appears in Diagnostic Plots.
 ```{r ref.label = "plotDiagnostic2"}
 ```
 
@@ -1159,13 +1159,13 @@ Produces a table of AIC and PRESS Statistic value for both models. Appears PRESS
 
 ### Table 2.5
 
-Produces a table of the mean and standard deviations for each model's rPMSE, a boxplot comparison of both rPMSEs, and plots residuals vs fitted values for each model. Appears in Cross Validation.
+Produces a table of the mean and standard deviations for each model's rPMSE. Appears in Cross Validation.
 ```{r ref.label = "crossVData"}
 ```
 
 ### Figure 2.{6, 7}
 
-Plot
+2.6 produces a boxplot comparison of both rPMSEs. Appears in Cross Validation. 2.7 produces plots of residuals vs fitted values for each model. Appears in Cross Validation.
 ```{r ref.label = "crossVPlots"}
 ```
 
