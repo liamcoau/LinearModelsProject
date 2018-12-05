@@ -12,7 +12,7 @@ header-includes:
 # Knitr Configuration
 knitr::opts_chunk$set(
   comment = NA,
-  #cache = TRUE,
+  cache = TRUE,
   include = TRUE,
   echo = FALSE,
   results = "markup",
@@ -70,6 +70,8 @@ m <- 1000
 ```
 
 ```{r bmiFunctions}
+# Input: bmi - a BMI
+# Output: TRUE/FALSE depending on if the BMI falls into category in function name
 isUnderweight <- function (bmi) bmi < underweightNormalBoundary
 isNormal <- function (bmi) bmi < normalOverweightBoundary &
                            bmi >= underweightNormalBoundary
@@ -77,18 +79,28 @@ isOverweight <- function (bmi) bmi < overweightObeseBoundary &
                                bmi >= normalOverweightBoundary
 isObese <- function (bmi) bmi >= overweightObeseBoundary
 
+# Input: wtLbs - weight in pounds
+#        htIn - height in inches
+# Output: (double) BMI
 bmi <- function (wtLbs, htIn) (wtLbs * poundsToKg) / (htIn * inchesToM)^2
 ```
 
 ```{r numCigs}
 # Roughly translate the "number" category to a floating point
 # number of the actual number of cigarettes smoked
+# Input: number - raw value for 'number' variable
+# Output: (double) approximation of the number of individual cigarettes smoked per day
 numCigs <- function (number) (number > 0 & number <= 4) * (5 * number - 2.5) +
                              (number > 4) * (10 * number - 25.5)
 ```
 
 ```{r decodeBirthVariates}
-# Re-encoding and labelling variates as factors
+# Decode most categorical variates and encode them as labelled factors
+# Decodes 'number' and converts it to a float using numCigs
+# Decodes 'income' and converts it so a factor with 3 broader categories
+# Returns a new data frame and does not modify the given one
+# Input: birthsDataset - an imputed births dataset
+# Output: a new data frame with factor encoded categorical variables
 decodeBirthVariates <- function (birthsDataset) {
   newDataset = data.frame(birthsDataset)
 
@@ -172,7 +184,7 @@ decodeBirthVariates <- function (birthsDataset) {
     labels = c(
       "Under 2500",
       "2500-4999",
-      "5000-Over 25000"
+      "Over 5000"
     ),
     right = FALSE
   )
@@ -182,8 +194,11 @@ decodeBirthVariates <- function (birthsDataset) {
 ```
 
 ```{r smokingImpact}
+# Input: time - time since quitting smoking in original integer encoding
+#        number - number of cigarettes smoked in original integer encoding
+#        impactHalfLife - the half-life of the smoking impact as it decays after quitting
+# Output: (doubel) our custom smoking impact variate
 smokingImpact <- function (time, number, impactHalfLife) {
-  #cigaretteEffectRatio = 6
   # Take the average of the bounds of the range of cigarettes smoked by a given category
   # as the approximate exact number of cigarettes smoked per day
   activeSmokingImpact = log(
@@ -203,17 +218,27 @@ smokingImpact <- function (time, number, impactHalfLife) {
 ```
 
 ```{r engineeredFeatures}
+# Input: imputedBirthsDataset - an imputed births dataset
+#        impactHalfLife - the half-life parameter to supply when computing smokingImpact
+# Output: a new data frame with factor encoded categorical variables and new engineered features
 craftFeatures <- function (imputedBirthsDataset, impactHalfLife = 2) {
   newDataset = decodeBirthVariates(imputedBirthsDataset)
 
+  # Note: This treats parents of "Other" ethnicity
+  # as the same ethnicity though they may not be
   newDataset$sameEth <- factor(
-    imputedBirthsDataset$meth == imputedBirthsDataset$feth,
+    (imputedBirthsDataset$meth != 9 & # If they are both "Mixed" then it is like two
+                                      # parents of different ethnicities
+     imputedBirthsDataset$meth == imputedBirthsDataset$feth) |
+    # Both Caucasian
+    (imputedBirthsDataset$meth < 6 & imputedBirthsDataset$feth < 6),
     labels = c("Different", "Same")
   )
-  # What about "Other" though?
   
   newDataset$htDiff <- newDataset$fht - newDataset$mht
     
+  # If a mother is having her first child after 40,
+  # we say that she is becoming a mother late in life
   newDataset$lateMom <- factor(
     newDataset$parity == 0 & newDataset$mage >= 40,
     labels = c("Not late", "Late")
@@ -221,6 +246,8 @@ craftFeatures <- function (imputedBirthsDataset, impactHalfLife = 2) {
 
   newDataset$mBMI <- bmi(newDataset$mwt, newDataset$mht)
   
+  # Multiplying by 1, 2, and 3 to give integer encoding of
+  # categories which are then changed to a factor
   newDataset$mBMICategory <- factor(
     1 * isNormal(newDataset$mBMI)
       + 2 * isOverweight(newDataset$mBMI)
@@ -239,6 +266,9 @@ craftFeatures <- function (imputedBirthsDataset, impactHalfLife = 2) {
 ```
 
 ```{r meanAIC}
+# Input: model - a model
+#        datasets - a collection of imputed datasets
+# Output: (float) the average AIC of the model across the given datasets
 meanAIC <- function (model, datasets) mean(sapply(
   datasets,
   function (dataset) AIC(update(model, data = dataset))
@@ -246,19 +276,27 @@ meanAIC <- function (model, datasets) mean(sapply(
 ```
 
 ```{r selectModel}
+# Input: datasets - a collection of imputed datasets
+#        predictedVar - the variables to be predicted by the model
+#        excludedVars - variables in the datasets to be ignored in model selection
+#        specialTerms - specific terms to be allowed in the model (overrides exlusion)
+# Output: an automatically selected model which fits predictedVar with variables
+#         from the dataset
 selectModel <- function (
   datasets,
   predictedVar,
   excludedVars = c(),
-  specialTerms = c(),
-  interactionTerms = c()
+  specialTerms = c()
 ) {
   selectedModelMeanAIC = .Machine$integer.max
   selectedModel = NULL
   
+  # Fit a model against each dataset and keep with one which performs best on all
   for (dataset in datasets) {
     M0 = lm(wt ~ 1, data = dataset)
     Mmax = lm(
+      # Write maximal formula with interaction effects between all vars not excluded,
+      # with added special terms on their own
       formula(paste(
         predictedVar,
         "~",
@@ -273,11 +311,6 @@ selectModel <- function (
           function (l, r) paste(l, r),
           Map(function (term) paste("+", term), specialTerms),
           ""
-        ),
-        Reduce(
-          function (l, r) paste(l, r),
-          Map(function (term) paste("-", term), interactionTerms),
-          ""
         )
       )),
       data = dataset
@@ -290,10 +323,7 @@ selectModel <- function (
       trace = 0
     )
   
-    candidateModelMeanAIC = mean(sapply(
-      datasets,
-      function (dataset) AIC(update(candidateModel, data = dataset))
-    ))
+    candidateModelMeanAIC = meanAIC(candidateModel, datasets)
   
     if (candidateModelMeanAIC < selectedModelMeanAIC) {
       selectedModel = update(candidateModel, data = dataset)
@@ -306,6 +336,12 @@ selectModel <- function (
 ```
 
 ```{r crossValidate}
+# Input: model1 - a model
+#        model2 - a model
+#        datasets - datasets to cross-validate the models on
+# Output: the rPMSE for each model on each cross-validation trial,
+#         as well as a sample of actual values, predictions, and residuals
+#         from the final trial
 crossValidate <- function (model1, model2, datasets) {
   model1rPMSE <- vector(mode = "numeric", length = m)
   model2rPMSE <- vector(mode = "numeric", length = m)
@@ -344,18 +380,25 @@ crossValidate <- function (model1, model2, datasets) {
 ```
 
 ```{r import}
-# Import
+# Import dataset
 births <- read.csv("chds_births.csv")
 ```
 
 ```{r mend}
+# The occurrences of marital == 0 are likely transcription errors.
+# Replace them with NAs
 mendedBirths <- data.frame(births)
 mendedBirths[mendedBirths$marital == 0, "marital"] <- NA
 ```
 
 ```{r mice}
-library(mice)
+# Suppress library warnings
 options(warn=-1)
+
+# Multiple Imputation
+library(mice, quietly = TRUE)
+
+# For consistency
 set.seed(331)
 
 multiplyImputedBirths <- mice(
@@ -365,15 +408,22 @@ multiplyImputedBirths <- mice(
   printFlag = FALSE
 )
 
+# Gather the imputed datasets
 imputedBirths <- lapply(1:k, function(i) complete(multiplyImputedBirths, i))
 ```
 
 ```{r decodeBirths}
+# Decode the categorical variables into factors and replace number with
+# numCigs so that we don't get linearly dependent categories for never smoked
+# and smoked 0 cigarettes
 decodedImputedBirths <- lapply(imputedBirths, decodeBirthVariates)
 ```
 
 ```{r tuneHalfLife, results = "hide"}
+# The candidate values for half life
 halfLifeValues <- seq(0.1, 10, by = 0.1)
+
+# The half life value which maximized multiple R squared
 optimalImpactHalfLife <- 0.1 * which.max(sapply(
   halfLifeValues,
   function (halfLife) summary(lm(
@@ -398,6 +448,9 @@ paste("Optimal impact half life:", optimalImpactHalfLife)
 
 ```{r craftFeatures}
 library(purrr) # Needed for the function 'partial' used below
+# Create datasets with our engineered features and the previous factor
+# transformations from decodeImputedBirths as well, using the optimized
+# impact half life value
 engineeredFeatureBirths <- lapply(
   imputedBirths,
   partial(craftFeatures, impactHalfLife = optimalImpactHalfLife)
@@ -442,10 +495,12 @@ h<- hist(
   mar = c(1, 4, 1, 2) + 0.1
 ) 
 
-curve(dnorm(x, mean(births$wt), sd(births$wt)),
-      add = TRUE,
-      lwd = 3, 
-      col = "darkblue")
+curve(
+  dnorm(x, mean(births$wt), sd(births$wt)),
+  add = TRUE,
+  lwd = 3, 
+  col = "darkblue"
+)
 ```
 
 Looking at the data, we see that the distribution of the babies' weight is close to Normal, but has spikes in frequency in certain areas. This likely corresponds to rounding and measurement discrepancies.
@@ -461,7 +516,7 @@ plot(
   main = "Fig 1.3: Mother's Ethnicity vs Birth Weight",
   xlab = "Mother's Ethnicity",
   ylab = "Birth Weight (ounces)",
-  mar = c(1, 4, 1, 2) +0.1
+  mar = c(1, 4, 1, 2) + 0.1
 )
 ```
 
@@ -644,16 +699,6 @@ Model 1 is constructed using raw data with decoded categorical datasets. The aut
 
 The model is as follows:
 
-```{r test}
-dataset = craftFeatures(mendedBirths)
-Mmax <- lm(wt ~ (. - gestation - smoke - time - med - fed - income- marital - meth - feth - mBMICategory - htDiff - lateMom)^2, data = dataset)
-
-beta.max <- coef(Mmax)
-names(beta.max)[is.na(beta.max)]
-anyNA(coef(Mmax))
-
-```
-
 ```{r model1}
 basicBirthWeightModel <- selectModel(
   decodedImputedBirths,
@@ -754,7 +799,15 @@ By comparing the Residual Standard Error in both the Basic and Engineered Model,
 Figure 2.2
 ```{r plotDiagnostic1}
 layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
-plot(basicBirthWeightModel, cex = 0.4, which = c(1, 2), pch = 19, lwd = 2, main = NULL)
+plot(
+  basicBirthWeightModel,
+  cex = 0.4,
+  which = c(1, 2),
+  pch = 19,
+  col = adjustcolor("firebrick", 0.25),
+  lwd = 2,
+  main = NULL
+)
 ```
 
 ###Engineered Birth Model Plots
@@ -762,7 +815,15 @@ plot(basicBirthWeightModel, cex = 0.4, which = c(1, 2), pch = 19, lwd = 2, main 
 Figure 2.3
 ```{r plotDiagnostic2}
 layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
-plot(engineeredBirthWeightModel, cex = 0.4, which = c(1, 2), pch = 19, lwd = 2, main = NULL)
+plot(
+  engineeredBirthWeightModel,
+  cex = 0.4,
+  which = c(1, 2),
+  pch = 19,
+  col = adjustcolor("firebrick", 0.25),
+  lwd = 2,
+  main = NULL
+)
 ```
 
 Looking at the Residual and Fitted plot, both models do not exhibit any specific trend in the points, hence suggesting that there is a linear relationship present. Similar to the Residual plot, the Normal Q-Q plot also shows strong Normality. However, there is no significant evidence that one model exhibits better results than the other, hence additional diagnostics are required.
@@ -770,7 +831,7 @@ Looking at the Residual and Fitted plot, both models do not exhibit any specific
 ## PRESS Statistic and AIC
 ```{r PRESSandAIC}
 press1 <- resid(basicBirthWeightModel) / (1 - hatvalues(basicBirthWeightModel)) 
-press2 <-  resid(engineeredBirthWeightModel) / (1 - hatvalues(engineeredBirthWeightModel))
+press2 <- resid(engineeredBirthWeightModel) / (1 - hatvalues(engineeredBirthWeightModel))
 AIC1 <- c("Basic", "Engineered")
 
 #display results
@@ -806,14 +867,18 @@ colnames(PMSETable) <- c("Basic Mode", "Engineered Model")
 rownames(PMSETable) <- c("Mean", "SD")
 PMSETable
 
-boxplot(list(model1rPMSE = rPMSEs$model1, model2rPMSE = rPMSEs$model2), 
-        main = "Comparison of rPMSEs")
+boxplot(
+  list(model1rPMSE = rPMSEs$model1, model2rPMSE = rPMSEs$model2), 
+  main = "Comparison of rPMSEs"
+)
+
 layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
 plot(
   cvResults$predictions$model1,
   cvResults$residuals$model1,
   main = "Predicted Values vs Basic Model Res",
   cex.main = 0.8,
+  col = adjustcolor("firebrick", 0.5),
   xlab = "Predicted Values",
   ylab = "Basic Model Residuals",
   pch = 16
@@ -823,6 +888,7 @@ plot(
   cvResults$residuals$model2,
   main = "Predicted Values vs Engineered Model Res",
   cex.main = 0.8,
+  col = adjustcolor("firebrick", 0.5),
   xlab = "Predicted Values",
   ylab = "Engineered Model Residuals",
   pch = 16
@@ -841,7 +907,8 @@ qqnorm(
   cvResults$residuals$model1,
   main = "Normal Q-Q Plot for Basic",
   cex.main = 0.85,
-  pch = 16
+  pch = 16,
+  col = adjustcolor("firebrick", 0.5)
 )
 abline(a = 0, b = 20, lty = 2, lwd = 2, col = "blue")
 
@@ -849,7 +916,8 @@ qqnorm(
   cvResults$residuals$model2,
   main = "Normal Q-Q Plot for Engineered",
   cex.main = 0.85,
-  pch = 16
+  pch = 16,
+  col = adjustcolor("firebrick", 0.5)
 )
 abline(a = 0, b = 20, lty = 2, lwd = 2, col = "blue")
 ```
