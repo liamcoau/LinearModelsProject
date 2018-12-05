@@ -12,7 +12,7 @@ header-includes:
 # Knitr Configuration
 knitr::opts_chunk$set(
   comment = NA,
-  #cache = TRUE,
+  cache = TRUE,
   include = TRUE,
   echo = FALSE,
   results = "markup",
@@ -224,12 +224,14 @@ smokingImpact <- function (time, number, impactHalfLife) {
 craftFeatures <- function (imputedBirthsDataset, impactHalfLife = 2) {
   newDataset = decodeBirthVariates(imputedBirthsDataset)
 
-  # Note: This treats parents of "Mixed" and "Other" ethnicities
-  # as the same ethnicity though for arguably babies of two parents
-  # of "Mixed" ethnicity end up as "Mixed" which is the interpretation
-  # of this feature being "FALSE"
+  # Note: This treats parents of "Other" ethnicity
+  # as the same ethnicity though they may not be
   newDataset$sameEth <- factor(
-    imputedBirthsDataset$meth == imputedBirthsDataset$feth,
+    (imputedBirthsDataset$meth != 9 & # If they are both "Mixed" then it is like two
+                                      # parents of different ethnicities
+     imputedBirthsDataset$meth == imputedBirthsDataset$feth) |
+    # Both Caucasian
+    (imputedBirthsDataset$meth < 6 & imputedBirthsDataset$feth < 6),
     labels = c("Different", "Same")
   )
   
@@ -390,10 +392,12 @@ mendedBirths[mendedBirths$marital == 0, "marital"] <- NA
 ```
 
 ```{r mice}
-# Multiple Imputation
-library(mice)
 # Suppress library warnings
 options(warn=-1)
+
+# Multiple Imputation
+library(mice, quietly = TRUE)
+
 # For consistency
 set.seed(331)
 
@@ -693,16 +697,6 @@ Model 1 is constructed using raw data with decoded categorical datasets. The aut
 
 The model is as follows:
 
-```{r test}
-dataset = craftFeatures(mendedBirths)
-Mmax <- lm(wt ~ (. - gestation - smoke - time - med - fed - income- marital - meth - feth - mBMICategory - htDiff - lateMom)^2, data = dataset)
-
-beta.max <- coef(Mmax)
-names(beta.max)[is.na(beta.max)]
-anyNA(coef(Mmax))
-
-```
-
 ```{r model1}
 basicBirthWeightModel <- selectModel(
   decodedImputedBirths,
@@ -803,7 +797,15 @@ By comparing the Residual Standard Error in both the Basic and Engineered Model,
 Figure 2.2
 ```{r plotDiagnostic1}
 layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
-plot(basicBirthWeightModel, cex = 0.4, which = c(1, 2), pch = 19, lwd = 2, main = NULL)
+plot(
+  basicBirthWeightModel,
+  cex = 0.4,
+  which = c(1, 2),
+  pch = 19,
+  col = adjustcolor("firebrick", 0.25),
+  lwd = 2,
+  main = NULL
+)
 ```
 
 ###Engineered Birth Model Plots
@@ -811,7 +813,15 @@ plot(basicBirthWeightModel, cex = 0.4, which = c(1, 2), pch = 19, lwd = 2, main 
 Figure 2.3
 ```{r plotDiagnostic2}
 layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
-plot(engineeredBirthWeightModel, cex = 0.4, which = c(1, 2), pch = 19, lwd = 2, main = NULL)
+plot(
+  engineeredBirthWeightModel,
+  cex = 0.4,
+  which = c(1, 2),
+  pch = 19,
+  col = adjustcolor("firebrick", 0.25),
+  lwd = 2,
+  main = NULL
+)
 ```
 
 Looking at the Residual and Fitted plot, both models do not exhibit any specific trend in the points, hence suggesting that there is a linear relationship present. Similar to the Residual plot, the Normal Q-Q plot also shows strong Normality. However, there is no significant evidence that one model exhibits better results than the other, hence additional diagnostics are required.
@@ -819,7 +829,7 @@ Looking at the Residual and Fitted plot, both models do not exhibit any specific
 ## PRESS Statistic and AIC
 ```{r PRESSandAIC}
 press1 <- resid(basicBirthWeightModel) / (1 - hatvalues(basicBirthWeightModel)) 
-press2 <-  resid(engineeredBirthWeightModel) / (1 - hatvalues(engineeredBirthWeightModel))
+press2 <- resid(engineeredBirthWeightModel) / (1 - hatvalues(engineeredBirthWeightModel))
 AIC1 <- c("Basic", "Engineered")
 
 #display results
@@ -855,14 +865,18 @@ colnames(PMSETable) <- c("Basic Mode", "Engineered Model")
 rownames(PMSETable) <- c("Mean", "SD")
 PMSETable
 
-boxplot(list(model1rPMSE = rPMSEs$model1, model2rPMSE = rPMSEs$model2), 
-        main = "Comparison of rPMSEs")
+boxplot(
+  list(model1rPMSE = rPMSEs$model1, model2rPMSE = rPMSEs$model2), 
+  main = "Comparison of rPMSEs"
+)
+
 layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
 plot(
   cvResults$predictions$model1,
   cvResults$residuals$model1,
   main = "Predicted Values vs Basic Model Res",
   cex.main = 0.8,
+  col = adjustcolor("firebrick", 0.5),
   xlab = "Predicted Values",
   ylab = "Basic Model Residuals",
   pch = 16
@@ -872,6 +886,7 @@ plot(
   cvResults$residuals$model2,
   main = "Predicted Values vs Engineered Model Res",
   cex.main = 0.8,
+  col = adjustcolor("firebrick", 0.5),
   xlab = "Predicted Values",
   ylab = "Engineered Model Residuals",
   pch = 16
@@ -890,7 +905,8 @@ qqnorm(
   cvResults$residuals$model1,
   main = "Normal Q-Q Plot for Basic",
   cex.main = 0.85,
-  pch = 16
+  pch = 16,
+  col = adjustcolor("firebrick", 0.5)
 )
 abline(a = 0, b = 20, lty = 2, lwd = 2, col = "blue")
 
@@ -898,7 +914,8 @@ qqnorm(
   cvResults$residuals$model2,
   main = "Normal Q-Q Plot for Engineered",
   cex.main = 0.85,
-  pch = 16
+  pch = 16,
+  col = adjustcolor("firebrick", 0.5)
 )
 abline(a = 0, b = 20, lty = 2, lwd = 2, col = "blue")
 ```
