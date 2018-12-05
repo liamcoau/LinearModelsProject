@@ -356,6 +356,7 @@ mendedBirths[mendedBirths$marital == 0, "marital"] <- NA
 ```{r mice}
 library(mice)
 options(warn=-1)
+set.seed(331)
 
 multiplyImputedBirths <- mice(
   mendedBirths,
