@@ -12,7 +12,7 @@ header-includes:
 # Knitr Configuration
 knitr::opts_chunk$set(
   comment = NA,
-  cache = FALSE,
+  #cache = TRUE,
   include = TRUE,
   echo = FALSE,
   results = "markup",
@@ -61,8 +61,8 @@ underweightNormalBoundary <- 18.5
 normalOverweightBoundary <- 25
 overweightObeseBoundary <- 30
 
-# Use test 10% for test set in cross validation
-testSetRatio = 0.1
+# Use test 20% for test set in cross validation
+testSetRatio = 0.2
 
 # Number of cross-validation trials
 # "Usually about a thousand is fine" - M. Lysy, Nov. 27, 2018
@@ -740,7 +740,6 @@ enginARsquared <- summary(engineeredBirthWeightModel)$adj.r.squared
 summaryTable <- data.frame(c(basicRes, enginRes), c(basicRsquared, enginRsquared), c(basicARsquared, enginARsquared))
 colnames(summaryTable) <- c("Residual Standard Error", "R Squared", "Adjusted R Squared")
 rownames(summaryTable) <- c("Basic Model", "Engineered Model")
-paste("Table 2.1")
 summaryTable 
 ```
 
@@ -862,6 +861,14 @@ Looking at the p-values of the Engineered Model in Appendix 3.3.4, the most impo
 By comparing the different p-value and beta of the coefficients of the Engineered model, some behaivourals changes that the parents could make to have a higher birth weight are:
 * Refrain from smoking during pregenancy to lower the smoking impact
 * Maintain a higher BMI
+
+## High p-values
+
+Looking at Table 3.3, we see that there are many factors associated with a relatively high p-value: the mother's ethnicity when she's Mexican, Mixed or Other and the time since the mother quit smoking if she Still Smokes, if she Quit Less Than a Year Ago, 2-3 Years Ago, 3-4 Years Ago, 5-9 Years Ago or she Quit But Doesn't Know When.
+
+There were two reasons not to remove these variables. For example, when the mother is Mixed, the p-value is very high. However, we cannot remove the mother's ethnicity as a factor because that would remove other significant covariates, such as the mother's ethnicity when she is African-American.
+
+Another reason we did not remove these variables was because of the percentage of the population that fell under those categories. For example, the number of people who Quit But Didn't Know When was very small: only 0.4% (See Appendix 3.3.6). This results in a large p-value as their results are less representative of the population than that of a more significant sample.
 
 ## Regression Assumptions
 
@@ -1092,6 +1099,14 @@ format(round(enginCoeff, 3), digits = 2, scientific = FALSE)
 ```{r summaryPlots2, eval = TRUE}
 plot(engineeredBirthWeightModel, cex = 0.4, which = c(1, 2), pch = 19, lwd = 2, main = NULL)
 ```
+
+### Table 3.6
+
+```{r percentTime}
+# Percentage of entries in each category for time
+sapply(0:9, function(i) sum(na.omit(births$time == i))/1236)
+```
+
 ## Section 4: Model Selection
 
 ### Chunk 1
