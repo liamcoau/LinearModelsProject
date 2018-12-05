@@ -362,7 +362,6 @@ multiplyImputedBirths <- mice(
   mendedBirths,
   m = k,
   method = "pmm",
-  seed = 500,
   printFlag = FALSE
 )
 
