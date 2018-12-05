@@ -533,6 +533,7 @@ plot(
   col = adjustcolor("firebrick", 0.25),
   pch = 16,
   main = "Fig. 1.6.1: Mother vs Father Height",
+  cex.main = 0.75,
   xlab = "Mother's Height (inches)",
   ylab = "Father's Height (inches)",
   cex.main = 0.65
@@ -544,6 +545,7 @@ plot(
   pch = 16,
   col = adjustcolor("firebrick", 0.25),
   main = "Fig. 1.6.2: Difference in Height vs Weight",
+  cex.main = 0.75,
   xlab = "Difference in Height (inches)",
   ylab = "Birth Weight (ounces)",
   cex.main = 0.65
@@ -553,7 +555,7 @@ mean(imputedBirths[[1]][imputedBirths[[1]]$mht > imputedBirths[[1]]$fht, "wt"])
 mean(imputedBirths[[1]][imputedBirths[[1]]$mht <= imputedBirths[[1]]$fht, "wt"])
 ```
 
-Based on the data, there did not appear to be a relationship between only the difference in parental height and the babies' weight.
+Based on the plot, there is no obvious relationship between the difference in parental height and the babies' weight.
 
 BMI, as a relatively good indicator of health, would theoretically also be a good indicator of health of a newborn baby. We wanted to look at the mothers' BMI to see whether that would have a relationship with the baby's newborn weight.
 
@@ -641,9 +643,13 @@ basicBirthWeightModel$call
 
 ## Candidate Model 2
 
-For our second model, we decided to try to engineer some features which we had hypothesized would have a meaningful relation to the birth weight of a baby. These engineered features included the difference between mother and father's heights (htDiff), whether the mother was having her first child late in life, the mother's BMI (mBMI), the mother's BMI category (mBMICategory), and smoking health impact (smokingImpact).
+For our second model, we decided to try engineered some features which we hypothesized have a meaningful relation to the birth weight of a baby. These engineered features include the difference between mother and father's heights (htDiff), whether the parents are the same ethnicity, whether the mother is having her first child late in life, the mother's BMI (mBMI), the mother's BMI category (mBMICategory), and smoking health impact (smokingImpact).
 
-We suspected that the body composition of the mother was more predictive than a linear combination of her height and weight. BMI will allow the model to incorporate a more complex relationship between the weight and height of a mother. For example being underweight, regardless of your height, may impact your pregnancy and hence the weight of the baby. Since a scalar BMI will only represent a linear relationship between birth weight and BMI, we included BMI categories under the hypothesis that both being underweight and overweight could have a negative impact on the birth weight.
+As explained preceeding figures 1.6.1 and 1.6.2 in the Data Exploration sub-section, we know that the difference in the height of the parents can impact pregnancy outcomes. We thus decided to include this as an engineered factor.
+
+According to this study (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2867623/), babies of mixed race have a higher rate of low birth weight. We included a variate indicating whether the parents were the same ethnicity or not. We treated two parents of 'Other' ethnicity as being the same ethnicity, and if both parents were 'Mixed' ethnicity, then were categorized them as different ethnicity as well.
+
+We suspected that the body composition of the mother is more predictive than a linear combination of her height and weight. Using BMI will allow the model to incorporate a more complex relationship between the weight and height of a mother. For example being underweight, regardless of your height, may impact your pregnancy and hence the weight of the baby. Since a scalar BMI will only represent a linear relationship between birth weight and BMI, we included BMI categories under the hypothesis that both being underweight and overweight could have a negative impact on the birth weight.
 
 BMI is defined as $\frac{\textrm{weight (kg)}}{\textrm{height}^2 (\textrm{m}^2)}$
 
@@ -677,6 +683,7 @@ where ${\alpha}$ is the number of cigarettes smoked per day while smoking, $\bet
 
 After running an experiment find the value for $\lambda$ which gave it the most explanatory power of the baby weight in the context of the existing time and number of cigarette variates, the value we obtained was 0.1 (Appendix 2.2.5). It was apparent that the smaller the value of $\lambda$, the higher the $R^2$ value we obtained. At values this small, the smoking impact becomes 0 regardless of whenever the smoker has quit. We interpreted this to mean that our measure of smoking impact did not add any explanatory power after the mother has quit smoking. However, it did still increase the $R^2$ when it was included with $\lambda = 0.1$, so we selected this value for the parameter.
 
+
 The model is as follows:
 
 ```{r model2}
@@ -698,7 +705,7 @@ engineeredBirthWeightModel$call
 
 # Model Diagnostics
  
-## Summary Statstics
+## Summary Statistics
 
 ```{r summaryStastics}
 # residual standard error
@@ -723,7 +730,7 @@ By comparing the Residual Standard Error in both the Basic and Engineered Model,
 
 ## Diagnostic Plots
 
-###Basic Birth Weight Model
+### Basic Birth Weight Model
 
 Figure 2.2
 ```{r plotDiagnostic1}
@@ -756,6 +763,8 @@ plot(
 ```
 
 Looking at the Residual and Fitted plot, both models did not exhibit any specific trend in the points, hence suggesting that there was a linear relationship present. Similar to the Residual plot, the Normal Q-Q plot also showed strong Normality. However, there was no significant evidence that one model exhibited better results than the other, hence additional diagnostics were required.
+
+By looking at the plot of Cook's distance of the two models in Appendix 3.3.2 and Appendix 3.3.3, there is around the same number fo high influential data points in the model. The Engineered Model's data is overall more influential compared to the Basic model.
 
 ## PRESS Statistic and AIC
 ```{r PRESSandAIC}
@@ -857,7 +866,7 @@ Comparing the different diagnostics of the two models, it was evident that the s
 
 ## Significance
 
-Looking at the p-values of the Engineered Model in Appendix 3.3.4, the most important factors that affected a baby's birth weight is the time since the mother quit smoking, the mother's ethnicity, the mother's height, the mBMI, and the parity, with the most significant being the mother's ethnicity and height. 
+Looking at the p-values of the Engineered Model in Appendix 3.3.5, the most important factors that affected a baby's birth weight is the time since the mother quit smoking, the mother's ethnicity, the mother's height, the mBMI, and the parity, with the most significant being the mother's ethnicity and height. 
 
 ## Behavioural Recommendations
 
@@ -867,16 +876,16 @@ By comparing the different p-values and betas of the coefficients of the Enginee
 
 ## High p-values
 
-Looking at Appendix 3.3.3, we saw that there were many factors associated with a relatively high p-value: the mother's ethnicity when she's Mexican, Mixed or Other and the time since the mother quit smoking if she Still Smokes, if she Quit Less Than a Year Ago, 2-3 Years Ago, 3-4 Years Ago, 5-9 Years Ago or she Quit But Doesn't Know When.
+Looking at Appendix 3.3.4, we saw that there were many factors associated with a relatively high p-value: the mother's ethnicity when she's Mexican, Mixed or Other and the time since the mother quit smoking if she Still Smokes, if she Quit Less Than a Year Ago, 2-3 Years Ago, 3-4 Years Ago, 5-9 Years Ago or she Quit But Doesn't Know When.
 
 There were two reasons not to remove these variables, the first being that the removal of the variable could result in the removal of a significant covariate. For example, when the mother is Mixed, the p-value is very high. However, we cannot remove the mother's ethnicity as a factor because that would remove other significant covariates, such as the mother's ethnicity when she is African-American.
 
-The second reason we did not remove these variables was because of the percentage of the population that fell under those categories. For example, the number of people who Quit But Didn't Know When was very small: only 0.4% (See Appendix 3.3.5). This results in a large p-value as their results are less representative of the population than that of a more significant sample.
+The second reason we did not remove these variables was because of the percentage of the population that fell under those categories. For example, the number of people who Quit But Didn't Know When was very small: only 0.4% (See Appendix 3.3.7). This results in a large p-value as their results are less representative of the population than that of a more significant sample.
 
 ## Regression Assumptions
 
-Looking at Appendix 3.3.4, we see that the Residual vs Fitted plot has a relatively horizontal line, indicating that the linearity of data assumption has been preserved. We also see that the residuals roughly follow a Normal distribution from the Q-Q Plot.  
-The Scale-Location Plot shows a horizontal line, slightly curved downward. Furthermore, the spread of the points is close to equal, with there being slightly more points above the line. Overall, the homoscedasticity of variance assumption is preserved. See Appendix 3.3.4.
+Looking at Appendix 3.3.6, we see that the Residual vs Fitted plot has a relatively horizontal line, indicating that the linearity of data assumption has been preserved. We also see that the residuals roughly follow a Normal distribution from the Q-Q Plot.  
+The Scale-Location Plot shows a horizontal line, slightly curved downward. Furthermore, the spread of the points is close to equal, with there being slightly more points above the line. Overall, the homoscedasticity of variance assumption is preserved. See Appendix 3.3.6.
 
 \pagebreak
 
@@ -1122,7 +1131,21 @@ qqplot(
 abline(a = 0, b = 1, lty = 2, col = "red")
 ```
 
-### Table 3.2 - Basic Model Coefficients
+### Figure 3.2
+Cook's Distance plot for Basic Model - Appears in Model Selection.
+
+```{r leverage1, eval = TRUE}
+plot(basicBirthWeightModel, cex = 0.4, which = c(4, 4), pch = 19, lwd = 2, main = NULL)
+```
+
+### Figure 3.3
+Cook's Distance plot for Engineered Model - Appears in Model Selection.
+
+```{r leverage2, eval = TRUE}
+plot(engineeredBirthWeightModel, cex = 0.4, which = c(4, 4), pch = 19, lwd = 2, main = NULL)
+```
+
+### Table 3.4 - Basic Model Coefficients
 
 Produces a summary table of the Basic Model.
 ```{r pValue1, eval = TRUE}
@@ -1132,7 +1155,7 @@ basicCoeff <- data.frame(summary(basicBirthWeightModel)$coefficients)
 format(round(basicCoeff, 3), digits = 2, scientific = FALSE)
 ```
 
-### Table 3.3 - Engineered Model Coefficients
+### Table 3.5 - Engineered Model Coefficients
 
 Produces a summary table of the Engineered Model. Appears in Discussion.
 ```{r pValue2, eval = TRUE}
@@ -1141,14 +1164,15 @@ enginCoeff <- data.frame(summary(engineeredBirthWeightModel)$coefficients)
 format(round(enginCoeff, 3), digits = 2, scientific = FALSE)
 ```
 
-### Figure 3.4
+### Figure 3.6
 
-Produces a residuals vs fitted plot and a Normal Q-Q Plot for the Engineered Model. Appears in Discussion.
+Produces a Residual vs Fitted, Normal QQ, and Scale-Location plot for the Engineered Model. Appears in Discussion.
+
 ```{r summaryPlots2, eval = TRUE}
 plot(engineeredBirthWeightModel, cex = 0.4, which = c(1, 3), pch = 19, lwd = 2, main = NULL)
 ```
 
-### Table 3.5
+### Table 3.7
 
 Produces a table of the percentage of entries in each category for time. Appears in Discussion.
 ```{r percentTime}
