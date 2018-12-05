@@ -607,6 +607,7 @@ plot(
   col = adjustcolor("firebrick", 0.25),
   pch = 16,
   main = "Fig. 1.6.1: Mother vs Father Height",
+  cex.main = 0.75,
   xlab = "Mother's Height (inches)",
   ylab = "Father's Height (inches)",
   cex.main = 0.65
@@ -618,13 +619,14 @@ plot(
   pch = 16,
   col = adjustcolor("firebrick", 0.25),
   main = "Fig. 1.6.2: Difference in Height vs Weight",
+  cex.main = 0.75,
   xlab = "Difference in Height (inches)",
   ylab = "Birth Weight (ounces)",
   cex.main = 0.65
 )
 ```
 
-Based on the data, there does not appear to be a relationship between only the difference in parental height and the babies' weight.
+Based on the plot, there is no obvious relationship between the difference in parental height and the babies' weight.
 
 BMI, as a relatively good indicator of health, would theoretically also be a good indicator of health of a newborn baby. We want to look at the mothers' BMI to see whether that would have a relationship with the baby's newborn weight.
 
@@ -712,9 +714,13 @@ basicBirthWeightModel$call
 
 ## Candidate Model 2
 
-For our second model, we decided to try engineered some features which we hypothesized have a meaningful relation to the birth weight of a baby. These engineered features include the difference between mother and father's heights (htDiff), whether the mother is having her first child late in life, the mother's BMI (mBMI), the mother's BMI category (mBMICategory), and smoking health impact (smokingImpact).
+For our second model, we decided to try engineered some features which we hypothesized have a meaningful relation to the birth weight of a baby. These engineered features include the difference between mother and father's heights (htDiff), whether the parents are the same ethnicity, whether the mother is having her first child late in life, the mother's BMI (mBMI), the mother's BMI category (mBMICategory), and smoking health impact (smokingImpact).
 
-We suspect that the body composition of the mother is more predictive than a linear combination of her height and weight. BMI will allow the model to incorporate a more complex relationship between the weight and height of a mother. For example being underweight, regardless of your height, may impact your pregnancy and hence the weight of the baby. Since a scalar BMI will only represent a linear relationship between birth weight and BMI, we included BMI categories under the hypothesis that both being underweight and overweight could have a negative impact on the birth weight.
+As explained preceeding figures 1.6.1 and 1.6.2 in the Data Exploration sub-section, we know that the difference in the height of the parents can impact pregnancy outcomes. We thus decided to include this as an engineered factor.
+
+According to this study (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2867623/), babies of mixed race have a higher rate of low birth weight. We included a variate indicating whether the parents were the same ethnicity or not. We treated two parents of 'Other' ethnicity as being the same ethnicity, and if both parents were 'Mixed' ethnicity, then were categorized them as different ethnicity as well.
+
+We suspect that the body composition of the mother is more predictive than a linear combination of her height and weight. Using BMI will allow the model to incorporate a more complex relationship between the weight and height of a mother. For example being underweight, regardless of your height, may impact your pregnancy and hence the weight of the baby. Since a scalar BMI will only represent a linear relationship between birth weight and BMI, we included BMI categories under the hypothesis that both being underweight and overweight could have a negative impact on the birth weight.
 
 BMI is defined as $\frac{\textrm{weight (kg)}}{\textrm{height}^2 (\textrm{m}^2)}$
 
@@ -748,6 +754,7 @@ where ${\alpha}$ is the number of cigarettes smoked per day while smoking, $\bet
 
 After running an experiment find the value for $\lambda$ which gave it the most explanatory power of the baby weight in the context of the existing time and number of cigarette variates, the value we obtained was 0.1 (Appendix 2.2.5). It was apparent that the smaller the value of $\lambda$, the higher the $R^2$ value we obtained. At values this small, the smoking impact becomes 0 whenever the smoker has quit. We interpret this to mean that our measure of smoking impact did not add any explanatory power after the mother has quit smoking. However, it did still increase the $R^2$ when it was included with $\lambda = 0.1$, so we selected this value for the parameter.
 
+
 The model is as follows:
 
 ```{r model2}
@@ -769,7 +776,7 @@ engineeredBirthWeightModel$call
 
 # Model Diagnostics
  
-## Summary Statstics
+## Summary Statistics
 
 ```{r summaryStastics}
 # residual standard error
@@ -794,7 +801,7 @@ By comparing the Residual Standard Error in both the Basic and Engineered Model,
 
 ## Diagnostic Plots
 
-###Basic Birth Weight Model
+### Basic Birth Weight Model
 
 Figure 2.2
 ```{r plotDiagnostic1}
