@@ -673,22 +673,23 @@ enginARsquared <- summary(engineeredBirthWeightModel)$adj.r.squared
 summaryTable <- data.frame(c(basicRes, enginRes), c(basicRsquared, enginRsquared), c(basicARsquared, enginARsquared))
 colnames(summaryTable) <- c("Residual Standard Error", "R Squared", "Adjusted R Squared")
 rownames(summaryTable) <- c("Basic Model", "Engineered Model")
-summaryTable
-
+paste("Table 2.1")
+summaryTable 
 ```
 
 ## Plot Diagnostic
 
 ###Basic Birth Weight Model
 
+Figure 2.2
 ```{r plotDiagnostic1}
 layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
 plot(basicBirthWeightModel, cex = 0.4, pch = 19, main = NULL)
-
 ```
 
 ###Engineered Birth Model Plots
 
+Figure 2.3
 ```{r plotDiagnostic2}
 layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
 plot(engineeredBirthWeightModel, cex = 0.4, pch = 19, main = NULL)
@@ -773,7 +774,7 @@ qqnorm(
   cex.main = 0.85,
   pch = 16
 )
-abline(a = 0, b = 20, lty = 2, col = "blue")
+abline(a = 0, b = 20, lty = 2, lwd = 2, col = "blue")
 
 qqnorm(
   cvResults$residuals$model2,
@@ -781,12 +782,15 @@ qqnorm(
   cex.main = 0.85,
   pch = 16
 )
-abline(a = 0, b = 20, lty = 2, col = "blue")
+abline(a = 0, b = 20, lty = 2, lwd = 2, col = "blue")
 ```
 
 # Discussion
 
-We see that the model violates the constant variance model, as seen with the standard deviation of parity (See Appendix Figure 1.8)
+## Regression Assumptions
+
+Looking at Figure 2.3, we see that the Residual vs Fitted plot has a relatively horizontal line, indicating that the linearity of data assumption has been preserved. We also see that the residuals roughly follow a Normal distribution from the Q-Q Plot.  
+The Scale-Location Plot shows a horizontal line, slightly curved downward. Furthermore, the spread of the points is close to equal, with there being slightly more points above the line. Overall, the homoscedasticity of variance assumption is preserved. See Appendix Figure 3.4.
 
 \pagebreak
 
