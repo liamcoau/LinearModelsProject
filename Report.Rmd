@@ -460,7 +460,7 @@ engineeredFeatureBirths <- lapply(
 
 # Summary
 
-The purpose of this study was to determine what factors affect a male baby's birth weight with information readily available when the couple conceives. A sample of 1236 newborn males was conducted and information was taken via a survey of the mothers. The factors considered in this study were mother's age, mother's weight, father's ethnicity, the amount of time since the mother had stopped smoking, and parity. Furthermore, we engineered variables showing the mothers' pregnancy BMI, a smoking index to reflect the affects of smoking on the mothers' bodies, whether or not the parents were of the same ethnicity, and the height difference between the father and the mother. These variables were created either because the given variates were not an accurate predictor of health, or because we thought they would also be predictors of a baby's weight. Results of the study show that ______.
+The purpose of this study was to determine what factors affect a male baby's birth weight with information readily available when the couple conceives. A sample of 1236 newborn males was conducted from 1960-1967 and information was taken via a survey of the mothers. The factors considered in this study were mother's age, mother's weight, father's ethnicity, the amount of time since the mother had stopped smoking, and parity. Furthermore, we engineered variables showing the mothers' pregnancy BMI, a smoking index to reflect the affects of smoking on the mothers' bodies, whether or not the parents were of the same ethnicity, and the height difference between the father and the mother. These variables were created either because the given variates were not an accurate predictor of health, or because we thought they would also be predictors of a baby's weight. Results of the study show that the two factors most significant to a baby's birth weight are the mother's ethnicity and height.
 
 
 # Model Selection
@@ -608,7 +608,8 @@ plot(
   pch = 16,
   main = "Fig. 1.6.1: Mother vs Father Height",
   xlab = "Mother's Height (inches)",
-  ylab = "Father's Height (inches)"
+  ylab = "Father's Height (inches)",
+  cex.main = 0.65
 )
 abline(coef = c(0, 1))
 plot(
@@ -618,7 +619,8 @@ plot(
   col = adjustcolor("firebrick", 0.25),
   main = "Fig. 1.6.2: Difference in Height vs Weight",
   xlab = "Difference in Height (inches)",
-  ylab = "Birth Weight (ounces)"
+  ylab = "Birth Weight (ounces)",
+  cex.main = 0.65
 )
 ```
 
@@ -790,7 +792,7 @@ summaryTable
 
 By comparing the Residual Standard Error in both the Basic and Engineered Model, we see that the difference between them is not very large. However, we do see that the Residual Standard Error for the Engineered Model is preferable to that of the Basic Model. Similarly, the difference between the R Squared values for both models do not differ by a large amount,but the R Squared value for the Engineered Model is more preferable than that of the Basic Model.
 
-## Plot Diagnostic
+## Diagnostic Plots
 
 ###Basic Birth Weight Model
 
@@ -861,7 +863,7 @@ Based on the rPMSEs, we see that the mean for the Engineered Model is greater th
 ```{r crossVData}
 rPMSEs <- cvResults$rPMSEs
 PMSETable <- data.frame(c(mean(rPMSEs$model1), sd(rPMSEs$model1)), c(mean(rPMSEs$model2), sd(rPMSEs$model2)))
-colnames(PMSETable) <- c("Basic Mode", "Engineered Model")
+colnames(PMSETable) <- c("Basic Model", "Engineered Model")
 rownames(PMSETable) <- c("Mean", "SD")
 PMSETable
 
@@ -924,7 +926,11 @@ Comparing the different diagnostics of the two models, it is evident that the st
 
 # Discussion
 
-Looking at the p-values of the Engineered Model in Appendix 3.3.4, the most important factors that affects a babies weight is the time since the mother quit smoking, the mother's ethnicity, the mother's height, the mBMI, and the parity, with the most significant being the mother's ethinicity and height. 
+## Significance
+
+Looking at the p-values of the Engineered Model in Appendix 3.3.4, the most important factors that affects a baby's birth weight is the time since the mother quit smoking, the mother's ethnicity, the mother's height, the mBMI, and the parity, with the most significant being the mother's ethinicity and height. 
+
+## Behavioural Recommendations
 
 By comparing the different p-value and beta of the coefficients of the Engineered model, some behaivourals changes that the parents could make to have a higher birth weight are:
 * Refrain from smoking during pregenancy to lower the smoking impact
@@ -936,12 +942,12 @@ Looking at Table 3.3, we see that there are many factors associated with a relat
 
 There were two reasons not to remove these variables. For example, when the mother is Mixed, the p-value is very high. However, we cannot remove the mother's ethnicity as a factor because that would remove other significant covariates, such as the mother's ethnicity when she is African-American.
 
-Another reason we did not remove these variables was because of the percentage of the population that fell under those categories. For example, the number of people who Quit But Didn't Know When was very small: only 0.4% (See Appendix 3.3.6). This results in a large p-value as their results are less representative of the population than that of a more significant sample.
+Another reason we did not remove these variables was because of the percentage of the population that fell under those categories. For example, the number of people who Quit But Didn't Know When was very small: only 0.4% (See Appendix 3.3.5). This results in a large p-value as their results are less representative of the population than that of a more significant sample.
 
 ## Regression Assumptions
 
-Looking at Figure 2.3, we see that the Residual vs Fitted plot has a relatively horizontal line, indicating that the linearity of data assumption has been preserved. We also see that the residuals roughly follow a Normal distribution from the Q-Q Plot.  
-The Scale-Location Plot shows a horizontal line, slightly curved downward. Furthermore, the spread of the points is close to equal, with there being slightly more points above the line. Overall, the homoscedasticity of variance assumption is preserved. See Appendix 3.3.5.
+Looking at Appendix 3.3.4, we see that the Residual vs Fitted plot has a relatively horizontal line, indicating that the linearity of data assumption has been preserved. We also see that the residuals roughly follow a Normal distribution from the Q-Q Plot.  
+The Scale-Location Plot shows a horizontal line, slightly curved downward. Furthermore, the spread of the points is close to equal, with there being slightly more points above the line. Overall, the homoscedasticity of variance assumption is preserved. See Appendix 3.3.4.
 
 \pagebreak
 
@@ -1020,112 +1026,88 @@ knitr::opts_chunk$set(include = TRUE, echo = TRUE, eval = FALSE)
 
 ### Figure 1.1
 
-Produces a pair plot of the variables birth weight, mother height, mother weight, time (since quitting smoking), and number (number of cigarettes smoke per day while smoking)
+Produces a pair plot of the variables birth weight, mother height, mother weight, time (since quitting smoking), and number (number of cigarettes smoke per day while smoking). Appears in Data Exploration.
 ```{r ref.label = "1"}
 ```
 
 ### Figure 1.2
 
-Plot
+Produces a histogram displaying the percent of the population each birth weight represents with a Normal distribution curve superimposed. Appears in Data Exploration.
 ```{r ref.label = "2"}
 ```
 
 ### Figure 1.3
 
-Plot
+Produces a plot of mother's ethnicity against birth weight. Appears in Data Exploration.
 ```{r ref.label = "3"}
 ```
 
 ### Figure 1.4
 
-Plot
+Produces a plot of parity against birth weight. Appears in Data Exploration.
 ```{r ref.label = "4"}
 ```
 
 ### Figure 1.5.{1, 2, 3, 4}
 
-Plot
+Produces plots of mother's education level, father's education level, mother's age at the termination of the pregnancy and household income against birth weight. Appears in Data Exploration. 
 ```{r ref.label = "5"}
 ```
 
 ### Figure 1.6.{1, 2}
 
-Plots the birth weight against the difference in height of the parents
+Produces a plot of the birth weight against the difference in height of the parents. Appears in Data Exploration.
 ```{r ref.label = "6"}
 ```
 
 ### Figure 1.7
 
-Plots the birth weight against the BMI of the mother
+Produces a plot of the birth weight against the BMI of the mother. Appears in Data Exploration.
 ```{r ref.label = "BMI"}
 ```
 
-
 ### Figure 1.8
 
-Plot
+Produces a plot of gestation period against birth weight. Appears in Data Exploration.
 ```{r ref.label = "gestation"}
 ```
 
-
 ### Table 1.9
 
-Table
+Produces a table of the number of occurrences per marital status category. Appears in Outliers.
 ```{r ref.label = "outliers"}
 ```
 
 
 ### Table 1.10
 
-Table
+Produces a table of the percentage of NAs in the dataset by variable. Appears in Missing Data.
 ```{r ref.label = "NAs"}
 ```
 
-
 ### Figure 2.1
 
-Plot
-```{r ref.label = "leverage"}
+Produces a table of AIC and PRESS Statistic value for both models. Appears PRESS Statistic and AIC.
+```{r ref.label = "PRESSandAIC"}
 ```
 
-### Figure 2.2
+#### Figure 2.2
 
-Plot
-```{r ref.label = "PRESSandAIC"}
+Produces a table of the mean and standard deviations for each model's rPMSE, a boxplot comparison of both rPMSEs, and plots residuals vs fitted values for each model. Appears in Cross Validation.
+```{r ref.label = "crossVData"}
+
 ```
 
 ### Figure 2.3
 
-Plot
-```{r ref.label = "crossValidation"}
-```
-
-### Figure 2.4
-
-Plot
+Produces a Normal Q-Q plot for both models. Appears in Cross Validation.
 ```{r ref.label = "qq"}
 ```
 
 
 ### Figure 3.1
 
-Plot
-```{r violateEqualVar, eval = TRUE}
-round(
-  sapply(
-    0:13,
-    function (parity) c(
-      mean(births[births$parity == parity, "wt"]),
-      sd(births[births$parity == parity, "wt"])
-    )
-  ),
-  2
-)
-```
-
-### Figure 3.2
-
-Plot
+Produces 
 ```{r extraQQ, eval = TRUE}
 qqplot(
   cvResults$predictions$model1,
@@ -1146,8 +1128,9 @@ qqplot(
 abline(a = 0, b = 1, lty = 2, col = "red")
 ```
 
-### Table 3.3 - Basic Model Coefficients
+### Table 3.2 - Basic Model Coefficients
 
+Produces a summary table of the Basic Model.
 ```{r pValue1, eval = TRUE}
 #Basic coefficients
 basicCoeff <- data.frame(summary(basicBirthWeightModel)$coefficients)
@@ -1155,24 +1138,31 @@ basicCoeff <- data.frame(summary(basicBirthWeightModel)$coefficients)
 format(round(basicCoeff, 3), digits = 2, scientific = FALSE)
 ```
 
-### Table 3.4 - Engineered Model Coefficients
+### Table 3.3 - Engineered Model Coefficients
+
+Produces a summary table of the Engineered Model. Appears in Discussion.
 ```{r pValue2, eval = TRUE}
 #Engineered coefficients
 enginCoeff <- data.frame(summary(engineeredBirthWeightModel)$coefficients)
 format(round(enginCoeff, 3), digits = 2, scientific = FALSE)
 ```
 
-### Figure 3.5
+### Figure 3.4
 
+Produces a residuals vs fitted plot and a Normal Q-Q Plot for the Engineered Model. Appears in Discussion.
 ```{r summaryPlots2, eval = TRUE}
-plot(engineeredBirthWeightModel, cex = 0.4, which = c(1, 2), pch = 19, lwd = 2, main = NULL)
+plot(engineeredBirthWeightModel, cex = 0.4, which = c(1, 3), pch = 19, lwd = 2, main = NULL)
 ```
 
-### Table 3.6
+### Table 3.5
 
+Produces a table of the percentage of entries in each category for time. Appears in Discussion.
 ```{r percentTime}
 # Percentage of entries in each category for time
-sapply(0:9, function(i) sum(na.omit(births$time == i))/1236)
+percentTime <- data.frame(c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9), 
+           sapply(0:9, function(i) sum(na.omit(births$time == i))/N))
+colnames(percentTime) <- c("Category Corresponding to Time", "Percentage of the Population")
+percentTime
 ```
 
 ## Section 4: Model Selection
@@ -1185,4 +1175,10 @@ sapply(0:9, function(i) sum(na.omit(births$time == i))/1236)
 ### Chunk 2
 
 ```{r ref.label = "model2"}
+```
+
+### Chunk 3
+
+Executes cross validation to compare candidate models. Appears in Cross Validation.
+```{r ref.label = "crossValidation"}
 ```
