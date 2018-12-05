@@ -644,7 +644,7 @@ basicBirthWeightModel$call
 
 For our second model, we decided to try engineered some features which we hypothesized have a meaningful relation to the birth weight of a baby. These engineered features include the difference between mother and father's heights (htDiff), whether the parents are the same ethnicity, whether the mother is having her first child late in life, the mother's BMI (mBMI), the mother's BMI category (mBMICategory), and smoking health impact (smokingImpact).
 
-As explained preceeding figures 1.6.1 and 1.6.2 in the Data Exploration sub-section, we know that the difference in the height of the parents can impact pregnancy outcomes. We thus decided to include this as an engineered factor.
+As explained preceding figures 1.6.1 and 1.6.2 in the Data Exploration sub-section, we know that the difference in the height of the parents can impact pregnancy outcomes. We thus decided to include this as an engineered factor.
 
 According to a the study in Gold et al. (2010), babies of mixed race have a higher rate of low birth weight. We included a variate indicating whether the parents were the same ethnicity or not. We treated two parents of 'Other' ethnicity as being the same ethnicity, and if both parents were 'Mixed' ethnicity, then were categorized them as different ethnicity as well.
 
@@ -764,7 +764,7 @@ plot(
 
 Looking at the Residual and Fitted plot, both models did not exhibit any specific trend in the points, hence suggesting that there was a linear relationship present. Similar to the Residual plot, the Normal Q-Q plot also showed strong Normality. However, there was no significant evidence that one model exhibited better results than the other, hence additional diagnostics were required.
 
-By looking at the plot of Cook's distance of the two models in Appendix 3.3.2 and Appendix 3.3.3, there is around the same number fo high influential data points in the model. The Engineered Model's data is overall more influential compared to the Basic model.
+By looking at the plot of Cook's distance of the two models in Appendix 3.3.2 and Appendix 3.3.3, there were around the same number of high influential data points in both models. The Engineered Model's data was overall more influential compared to the Basic Model.
 
 ## PRESS Statistic and AIC
 
@@ -882,11 +882,11 @@ By comparing the different p-values and betas of the coefficients of the Enginee
 
 ## High p-values
 
-Looking at Appendix 3.3.4, we saw that there were many factors associated with a relatively high p-value: the mother's ethnicity when she's Mexican, Mixed or Other and the time since the mother quit smoking if she Still Smokes, if she Quit Less Than a Year Ago, 2-3 Years Ago, 3-4 Years Ago, 5-9 Years Ago or she Quit But Doesn't Know When.
+Looking at Appendix 3.3.5, we saw that there were many factors associated with a relatively high p-value: the mother's ethnicity when she's Mexican, Mixed or Other and the time since the mother quit smoking if she Still Smokes, if she Quit Less Than a Year Ago, 2-3 Years Ago, 3-4 Years Ago, 5-9 Years Ago or she Quit But Doesn't Know When.
 
 There were two reasons not to remove these variables, the first being that the removal of the variable could result in the removal of a significant covariate. For example, when the mother is Mixed, the p-value is very high. However, we cannot remove the mother's ethnicity as a factor because that would remove other significant covariates, such as the mother's ethnicity when she is African-American.
 
-The second reason we did not remove these variables was because of the percentage of the population that fell under those categories. For example, the number of people who Quit But Didn't Know When was very small: only 0.4% (See Appendix 3.3.7). This results in a large p-value as their results are less representative of the population than that of a more significant sample.
+The second reason we did not remove these variables was because of the percentage of the population that fell under those categories. For example, the number of people who Quit But Didn't Know When was very small: only 0.4%, as seen in Appendix 3.3.7. This results in a large p-value as their results are less representative of the population than that of a more significant sample.
 
 ## Regression Assumptions
 
@@ -1192,14 +1192,14 @@ abline(a = 0, b = 1, lty = 2, col = "red")
 
 ### Figure 3.2
 
-Cook's Distance plot for Basic Model - Appears in Model Selection.
+Produces a Cook's Distance plot for Basic Model. Discussed in Diagnostic Plots.
 ```{r leverage1, eval = TRUE}
 plot(basicBirthWeightModel, cex = 0.4, which = c(4, 4), pch = 19, lwd = 2, main = NULL)
 ```
 
 ### Figure 3.3
 
-Cook's Distance plot for Engineered Model - Appears in Model Selection.
+Cook's Distance plot for Engineered Model. Discussed in Diagnostic Plots.
 ```{r leverage2, eval = TRUE}
 plot(engineeredBirthWeightModel, cex = 0.4, which = c(4, 4), pch = 19, lwd = 2, main = NULL)
 ```
@@ -1223,11 +1223,11 @@ enginCoeff <- data.frame(summary(engineeredBirthWeightModel)$coefficients)
 format(round(enginCoeff, 3), digits = 2, scientific = FALSE)
 ```
 
-### Figure 3.6
+### Figure 3.6.{1, 2, 3}
 
-Produces a Residual vs Fitted, Normal QQ, and Scale-Location plot for the Engineered Model. Appears in Discussion.
+Produces a Residual vs Fitted, Normal Q-Q, and Scale-Location plot for the Engineered Model. Appears in Discussion.
 ```{r summaryPlots2, eval = TRUE}
-plot(engineeredBirthWeightModel, cex = 0.4, which = c(1, 3), pch = 19, lwd = 2, main = NULL)
+plot(engineeredBirthWeightModel, cex = 0.4, which = c(1, 2, 3), pch = 19, lwd = 2, main = NULL)
 ```
 
 ### Table 3.7
