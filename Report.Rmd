@@ -63,6 +63,10 @@ overweightObeseBoundary <- 30
 
 # Use test 10% for test set in cross validation
 testSetRatio = 0.1
+
+# Number of cross-validation trials
+# "Usually about a thousand is fine" - M. Lysy, Nov. 27, 2018
+m <- 1000
 ```
 
 ```{r bmiFunctions}
@@ -79,7 +83,7 @@ bmi <- function (wtLbs, htIn) (wtLbs * poundsToKg) / (htIn * inchesToM)^2
 ```{r numCigs}
 # Roughly translate the "number" category to a floating point
 # number of the actual number of cigarettes smoked
-numCigs <- function (number) (number <= 4) * (5 * number - 2.5) +
+numCigs <- function (number) (number > 0 & number <= 4) * (5 * number - 2.5) +
                              (number > 4) * (10 * number - 25.5)
 ```
 
@@ -178,31 +182,28 @@ decodeBirthVariates <- function (birthsDataset) {
 ```
 
 ```{r smokingImpact}
-smokingImpact <- function (time, number) {
-  cigaretteEffectRatio = 6
+smokingImpact <- function (time, number, impactHalfLife) {
+  #cigaretteEffectRatio = 6
   # Take the average of the bounds of the range of cigarettes smoked by a given category
   # as the approximate exact number of cigarettes smoked per day
-  # https://www.med.uottawa.ca/sim/data/Smoking_and_Health_e.htm shows that it took a
-  # six-fold increase in the number of cigarettes smoked a day to double the impact
-  # on the likelihood of developing lung cancer. We approximate the effect of smoking
-  # on birth with this ratio too.
-  activeSmokingImpact = (number != 0) * 2^(numCigs(number) / cigaretteEffectRatio)
-  
-  impactTimeDecay = 2
+  activeSmokingImpact = log(
+    numCigs(number) +
+    (number == 0) * 1 # This term guarantees a value of 0 for non-smokers (0 = log(1))
+  )
   
   # Approximate a scalar number of years since quiting based on the categorical variable
   yearsQuit = (time >= 3) * (-2.5 + time) + (time >= 7) * (-18.5 + 3 * time)
   # Time = 1 or 2 are special cases with 0 decay
   yearsQuit = yearsQuit * (time >= 3)
   
-  decayedSmokingImpact = activeSmokingImpact * exp(-yearsQuit / impactTimeDecay)
+  decayedSmokingImpact = activeSmokingImpact * 2^(-yearsQuit / impactHalfLife)
   
   decayedSmokingImpact
 }
 ```
 
 ```{r engineeredFeatures}
-craftFeatures <- function (imputedBirthsDataset) {
+craftFeatures <- function (imputedBirthsDataset, impactHalfLife = 2) {
   newDataset = decodeBirthVariates(imputedBirthsDataset)
 
   newDataset$sameEth <- factor(
@@ -214,7 +215,7 @@ craftFeatures <- function (imputedBirthsDataset) {
   newDataset$htDiff <- newDataset$fht - newDataset$mht
     
   newDataset$lateMom <- factor(
-    newDataset$parity == 0 & newDataset$mage >= 35,
+    newDataset$parity == 0 & newDataset$mage >= 40,
     labels = c("Not late", "Late")
   )
 
@@ -229,7 +230,8 @@ craftFeatures <- function (imputedBirthsDataset) {
   
   newDataset$smokingImpact <- smokingImpact(
     imputedBirthsDataset$time,
-    imputedBirthsDataset$number
+    imputedBirthsDataset$number,
+    impactHalfLife
   )
   
   newDataset
@@ -261,10 +263,22 @@ selectModel <- function (
         predictedVar,
         "~",
         "(.",
-        Reduce(function (l, r) paste(l, r), Map(function (term) paste("-", term), excludedVars), ""),
+        Reduce(
+          function (l, r) paste(l, r),
+          Map(function (term) paste("-", term), excludedVars),
+          ""
+        ),
         ")^2",
-        Reduce(function (l, r) paste(l, r), Map(function (term) paste("+", term), specialTerms), ""),
-        Reduce(function (l, r) paste(l, r), Map(function (term) paste("-", term), interactionTerms), "")
+        Reduce(
+          function (l, r) paste(l, r),
+          Map(function (term) paste("+", term), specialTerms),
+          ""
+        ),
+        Reduce(
+          function (l, r) paste(l, r),
+          Map(function (term) paste("-", term), interactionTerms),
+          ""
+        )
       )),
       data = dataset
     ) 
@@ -293,9 +307,6 @@ selectModel <- function (
 
 ```{r crossValidate}
 crossValidate <- function (model1, model2, datasets) {
-  # "Usually about a thousand is fine" - M. Lysy, Nov. 27, 2018
-  m = 1000
-
   model1rPMSE <- vector(mode = "numeric", length = m)
   model2rPMSE <- vector(mode = "numeric", length = m)
 
@@ -361,8 +372,36 @@ imputedBirths <- lapply(1:k, function(i) complete(multiplyImputedBirths, i))
 decodedImputedBirths <- lapply(imputedBirths, decodeBirthVariates)
 ```
 
+```{r tuneHalfLife, results = "hide"}
+halfLifeValues <- seq(0.1, 10, by = 0.1)
+optimalImpactHalfLife <- 0.1 * which.max(sapply(
+  halfLifeValues,
+  function (halfLife) summary(lm(
+    wt ~ smokingImpact + time + numCigs,
+    data = data.frame(
+      wt = imputedBirths[[1]]$wt,
+      time = imputedBirths[[1]]$time,
+      numCigs = numCigs(
+        imputedBirths[[1]]$number
+      ),
+      smokingImpact = smokingImpact(
+        imputedBirths[[1]]$time,
+        imputedBirths[[1]]$number,
+        impactHalfLife = halfLife
+      )
+    )
+  ))$r.squared
+))
+
+paste("Optimal impact half life:", optimalImpactHalfLife)
+```
+
 ```{r craftFeatures}
-engineeredFeatureBirths <- lapply(imputedBirths, craftFeatures)
+library(purrr) # Needed for the function 'partial' used below
+engineeredFeatureBirths <- lapply(
+  imputedBirths,
+  partial(craftFeatures, impactHalfLife = optimalImpactHalfLife)
+)
 ```
 
 
@@ -512,7 +551,7 @@ plot(
   births$fht,
   col = adjustcolor("firebrick", 0.25),
   pch = 16,
-  main = "Mother vs Father Height",
+  main = "Fig. 1.6.1: Mother vs Father Height",
   xlab = "Mother's Height (inches)",
   ylab = "Father's Height (inches)"
 )
@@ -522,7 +561,7 @@ plot(
   births$wt,
   pch = 16,
   col = adjustcolor("firebrick", 0.25),
-  main = "Difference in Height vs Weight",
+  main = "Fig. 1.6.2: Difference in Height vs Weight",
   xlab = "Difference in Height (inches)",
   ylab = "Birth Weight (ounces)"
 )
@@ -538,7 +577,7 @@ plot(
   births$wt,
   pch = 16,
   col = adjustcolor("firebrick", 0.25),
-  main = "Mother's BMI vs Birth Weight",
+  main = "Fig. 1.7: Mother's BMI vs Birth Weight",
   xlab = "Mother's BMI (kg/m^2)",
   ylab = "Birth Weight (ounces)"
 )
@@ -554,7 +593,7 @@ plot(
   births$gestation,
   births$wt,
   col = adjustcolor("firebrick", 0.25),
-  main = "Gestation Period vs Birth Weight",
+  main = "Fig. 1.8: Gestation Period vs Birth Weight",
   xlab = "Gestation Period (days)",
   ylab = "Birth Weight (ounces)",
   pch = 16
@@ -567,7 +606,7 @@ We also found that gestation was very closely related to births, indicating that
 We discovered some values outside of the defined encodings. For example, in the marital column there were two 0s, which have no corresponding marital status. We overwrote those (likely) transcription errors with NAs which were later filled in with multiple imputation.
 
 ```{r outliers}
-paste("Number of Occurrences per Marital Status category")
+paste("Table 1.9: Number of Occurrences per Marital Status category")
 summary(factor(births$marital))
 ```
 
@@ -578,8 +617,17 @@ We see that 40% of the entries in both father's weight and father's height are N
 ```{r NAs}
 N <- nrow(mendedBirths)
 
-round(sapply(colnames(mendedBirths), function (colname) sum(is.na(mendedBirths[colname])) / N), 2)
-nrow(na.omit(mendedBirths[, !(colnames(mendedBirths) %in% c("fht", "fwt", "income"))])) / N
+paste("Table 1.10: Fraction of NAs by Variable")
+round(
+  sapply(
+    colnames(mendedBirths),
+    function (colname) sum(is.na(mendedBirths[colname])) / N
+  ),
+  2
+)
+nrow(na.omit(
+  mendedBirths[, !(colnames(mendedBirths) %in% c("fht", "fwt", "income"))]
+)) / N
 ```
 
 ## Data Preprocessing
@@ -590,7 +638,7 @@ All the data was included and values using MICE were substituted. The three afor
 
 ## Candidate Model 1
 
-Model 1 is constructed using raw data with decoded categorical datasets. The automated selection process uses stepwise selection.
+Model 1 is constructed using raw data with decoded categorical datasets. The automated selection process uses stepwise selection with direction set to both.
 
 The model is as follows:
 
@@ -607,9 +655,14 @@ basicBirthWeightModel$call
 
 ## Candidate Model 2
 
-Model 2 uses an engineered data, which includes the difference between mother and father's heights(htDiff), mother's (mBMI), mother's BMI category(mBMICategory), and smoking impact(smokingImpact). The automated model selection processes uses stepwise selection.
+For our second model, we decided to try engineered some features which we hypothesized have a meaningful relation to the birth weight of a baby. These engineered features include the difference between mother and father's heights (htDiff), whether the mother is having her first child late in life, the mother's BMI (mBMI), the mother's BMI category (mBMICategory), and smoking health impact (smokingImpact).
 
-The mother's BMI category is defined as the following:
+We suspect that the body composition of the mother is more predictive than a linear combination of her height and weight. BMI will allow the model to incorporate a more complex relationship between the weight and height of a mother. For example being underweight, regardless of your height, may impact your pregnancy and hence the weight of the baby. Since a scalar BMI will only represent a linear relationship between birth weight and BMI, we included BMI categories under the hypothesis that both being underweight and overweight could have a negative impact on the birth weight.
+
+BMI is defined as $\frac{\textrm{weight (kg)}}{\textrm{height}^2 (\textrm{m}^2)}$
+
+The mother's BMI category is defined as follows:
+
 \begin{center}
 \begin{tabular}{|c|c|}
 \hline
@@ -622,15 +675,21 @@ Obese & > 30 \\
 \hline
 \end{tabular}
 \end{center}
+  
+We wanted to create a better combined measure of how the mother's smoking habits impact the pregnancy. We hypothesized that there existed a "dimishing returns" effect on the number of cigarettes smoked. (https://www.med.uottawa.ca/sim/data/Smoking_and_Health_e.htm) demonstrates that it took a six-fold increase in the number of cigarettes smoked a day to double the increase of the likelihood multiplier of developing lung cancer. This is interpreted as evidence of a non-linear relationship, so we selected a logarithm of the number of cigarettes smoked as our measure of general health impact.
 
-The smoking impact is calculated as follows if $number {\neq} 0$:
+Secondly, we consider how the health impact fades after quitting smoking. We hypothesized that the health impact would decay exponentially over time as the body recovers. We construct our smoking impact feature as the logarithm of the number of cigarettes smoked per day while smoking, decayed by the number of years since quitting (or preserved if smoking has continued or mother quit during pregnancy). This is parameterized by the "effect half-life" for the decay which had to be selected. We expect that the health impact on the mother of her smoking habits which this is supposed to represent will have an impact on the health of the pregnancy and the weight of the baby.
+
+The smoking impact is calculated as follows:
 $$
-Smoking\ Impact = \begin{cases}
- ({2^{\gamma / \alpha}}) * {e^{-{\lambda}/{\beta}}} &\textrm{ if } \gamma > 0\\
+\textrm{Smoking Impact} = \begin{cases}
+ log(\alpha) * {2^{-{\beta}/{\lambda}}} &\textrm{ if } \gamma > 0\\
  0 &\textrm{ if } \gamma = 0
 \end{cases}
 $$
-where ${\alpha}$ = cigaretteEffectRatio = 6 , ${\gamma}$ = numCigs, ${\lambda}$ = yearsQuit, and ${\beta}$ = impactTimeDecay = 2
+where ${\alpha}$ is the number of cigarettes smoked per day while smoking, $\beta$ is the number of years since quitting (0 if not having quit or having quit during pregnancy), and $\lambda$ is the health impact half life.
+
+After running an experiment find the value for $\lambda$ which gave it the most explanatory power of the baby weight in the context of the existing time and number of cigarette variates, the value we obtained was 0.1 (Appendix 2.2.5). It was apparent that the smaller the value of $\lambda$, the higher the $R^2$ value we obtained. At values this small, the smoking impact becomes 0 whenever the smoker has quit. We interpret this to mean that our measure of smoking impact did not add any explanatory power after the mother has quit smoking. However, it did still increase the $R^2$ when it was included with $\lambda = 0.1$, so we selected this value for the parameter.
 
 The model is as follows:
 
@@ -697,7 +756,7 @@ plot(engineeredBirthWeightModel, cex = 0.4, pch = 19, main = NULL)
 
 Looking at the Residual and Fitted plot, both models do not exhibit any specific trend in the points, hence suggesting that there is a linear relationship present. Similar to the Residual plot, the Normal Q-Q plot also shows strong Normality. However, there is no significant evidence that one model exhibits better results than the other, hence additional diagnostics are required.
 
-## PRESS Stastic and AIC
+## PRESS Statistic and AIC
 ```{r PRESSandAIC}
 press1 <- resid(basicBirthWeightModel) / (1 - hatvalues(basicBirthWeightModel)) 
 press2 <-  resid(engineeredBirthWeightModel) / (1 - hatvalues(engineeredBirthWeightModel))
@@ -858,6 +917,10 @@ knitr::opts_chunk$set(include = TRUE, echo = TRUE, eval = FALSE)
 ```
 
 ### Chunk 5
+```{r ref.label = "tuneHalfLife", eval = TRUE}
+```
+
+### Chunk 6
 ```{r ref.label = "craftFeatures"}
 ```
 
@@ -887,13 +950,13 @@ Plot
 ```{r ref.label = "4"}
 ```
 
-### Figure 1.5
+### Figure 1.5.{1, 2, 3, 4}
 
 Plot
 ```{r ref.label = "5"}
 ```
 
-### Figure 1.6
+### Figure 1.6.{1, 2}
 
 Plots the birth weight against the difference in height of the parents
 ```{r ref.label = "6"}
