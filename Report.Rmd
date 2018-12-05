@@ -720,7 +720,11 @@ enginRsquared <- summary(engineeredBirthWeightModel)$r.squared
 basicARsquared <- summary(basicBirthWeightModel)$adj.r.squared
 enginARsquared <- summary(engineeredBirthWeightModel)$adj.r.squared
 
-summaryTable <- data.frame(c(basicRes, enginRes), c(basicRsquared, enginRsquared), c(basicARsquared, enginARsquared))
+summaryTable <- data.frame(
+  c(basicRes, enginRes),
+  c(basicRsquared, enginRsquared),
+  c(basicARsquared, enginARsquared)
+)
 colnames(summaryTable) <- c("Residual Standard Error", "R Squared", "Adjusted R Squared")
 rownames(summaryTable) <- c("Basic Model", "Engineered Model")
 summaryTable 
@@ -875,19 +879,17 @@ qqnorm(
 abline(a = 0, b = 20, lty = 2, lwd = 2, col = "blue")
 ```
 
-Comparing the different diagnostics of the two models, it was evident that the statistical diagnostic of the two models was very similar. However, by taking a look at the residual standard error, coefficients of determination, and PRESS statistic, the Engineered Model was a slightly better model compared to the Basic Model. However it was a lot more computationally complex than the Basic Model, but since we are only considering the model's predictive power in this course, the Engineered Model will be used for the discussion portion.
+Comparing the different diagnostics of the two models, it was evident that the statistical diagnostic of the two models was very similar. However, by taking a look at the residual standard error, coefficients of determination, and PRESS statistic, the Engineered Model was a slightly better model compared to the Basic Model. However it was a lot more computationally complex than the Basic Model, but since we are more interested in our model's predictive power for the purpose of this report, the Engineered Model will be selected as the final model and will be used for the discussion portion.
 
 # Discussion
 
 ## Significance
 
-Looking at the p-values of the Engineered Model in Appendix 3.3.5, the most important factors that affected a baby's birth weight is the time since the mother quit smoking, the mother's ethnicity, the mother's height, the mBMI, and the parity, with the most significant being the mother's ethnicity and height. 
+Looking at the p-values of the Engineered Model in Appendix 3.3.5, the most important factors that affected a baby's birth weight is the time since the mother quit smoking, the mother's ethnicity, the mother's height, the mBMI, and the parity, with the most significant being the mother's ethnicity and height.
 
 ## Behavioural Recommendations
 
-By comparing the different p-values and betas of the coefficients of the Engineered model, some behaivoural changes that the parents could make to have a higher birth weight are:
-* Refrain from smoking during pregnancy to lower the smoking impact
-* Maintain a higher BMI
+By comparing the different p-values and betas of the coefficients of the Engineered model, some behaviours most associated with birth weight are smoking and maintaining a high BMI. However, it would be incorrect to draw a causal link that would let us recommend behavioural changes.
 
 ## High p-values
 
