@@ -502,101 +502,27 @@ curve(
 )
 ```
 
-Looking at the data, we see that the distribution of the babies' weight is close to Normal, but has spikes in frequency in certain areas. This likely corresponds to rounding and measurement discrepancies.
+Looking at the data, we saw that the distribution of the babies' weight was close to Normal, but had spikes in frequency in certain areas. This likely corresponded to rounding and measurement discrepancies.
 
 We then decided to test the correlation between the mothers' ethnicity and the babies' weight. According to a 2009 study published in the British Journal of Nutrition, BMI was found to be an inaccurate measurement for non-white individuals. BMI, as a measure of weight proportional to the area of an individual's body, was found to differ among races (Dovey, 2018). Hence, it seems to be a viable factor when considering the weight of a newborn baby.
 
-```{r 3}
-plot(
-  births$meth,
-  births$wt,
-  col = adjustcolor("firebrick", 0.25),
-  pch = 16,
-  main = "Fig 1.3: Mother's Ethnicity vs Birth Weight",
-  xlab = "Mother's Ethnicity",
-  ylab = "Birth Weight (ounces)",
-  mar = c(1, 4, 1, 2) + 0.1
-)
-```
-
-However, based on the data, there was is no or little correlation between only the mothers' ethnicity and the babies' weight.
+However, based on the data, there was little or no correlation between only the mothers' ethnicity and the babies' weight. See Appendix 3.1.3 for plot.
 
 Next, we tested for a relationship between parity and the babies' weight. As a mother's body adjusts to pregnancy, it would make sense for the babies' weight to be affected.
 
-```{r 4}
-plot(
-  births$parity,
-  births$wt,
-  pch = 16,
-  col = adjustcolor("firebrick", 0.25),
-  main = "Fig. 1.4: Parity vs Birth Weight",
-  xlab = "Parity",
-  ylab = "Birth Weight (ounces)"
-)
-```
+Based on the data, we saw that there was minimal correlation between only the babies' weight and parity. See Appendix 3.1.4 for plot.
 
-Based on the data, we see that there there is minimal correlation between only babies' weight and parity.
+Finally, we tested for a relationship between the mothers' education level, fathers' education level, mothers' age at the termination of the pregnancy, and household income with the babies' weight. A household with a higher income would be able to provide more resources to a pregnant mother and would have a higher likelihood of having a healthy mother, who would likely give birth a baby with a healthy birth weight. A household with a higher income would likely have a highly educated mother, highly educated father, or both.
 
-Finally, we tested for a relationship between the mothers' education level, fathers' education level, mothers' age at the termination of the pregnancy, and household income with the babies' weight. A household with a higher income would be able to provide more resources to a pregnant mother and would have a higher likelihood of having a healthy mother, who would likely give birth a baby with a healthy baby weight. A household with a higher income would likely have a highly educated mother, or highly educated father, or both.
+Therefore, we tested for a relationship between mothers' education level and fathers' education level. A mother with a lower education level, which would not be uncommon given that the data was taken from 1960-1967, may have been more inclined to marry a man with a higher education level in order to provide for herself and a future child. She also would have wanted to give birth between her 20s and 30s, as that is when she is at her most fertile, and carries less risk in pregnancy.
 
-We also tested for a relationship between mothers' education level and fathers' education level. A mother with a lower education level, which would make sense given that the data is taken from 1960-1967, may be more inclined to marry a man with a higher education level in order to provide for herself and a future child.
-
-```{r 5}
-par(mfrow = c(1, 2))
-plot(
-  births$med,
-  births$wt,
-  col = adjustcolor("firebrick", 0.25),
-  pch = 16,
-  cex.main = 0.75,
-  cex.lab = 0.75,
-  main = "Fig 1.5.1: Mother's Education vs Birth Weight",
-  xlab = "Mother's Education",
-  ylab = "Birth Weight (ounces)"
-)
-plot(
-  births$fed,
-  births$wt,
-  col = adjustcolor("firebrick", 0.25),
-  pch = 16,
-  cex.main = 0.75,
-  cex.lab = 0.75,
-  main = "Fig. 1.5.2: Father's Education vs Birth Weight",
-  xlab = "Father's Education",
-  ylab = "Birth Weight (ounces)"
-)
-plot(
-  births$mage,
-  births$wt,
-  pch = 16,
-  cex.main = 0.75,
-  cex.lab = 0.75,
-  col = adjustcolor("firebrick", 0.25),
-  main = "Fig. 1.5.3: Mother's Age vs Birth Weight",
-  xlab = " Mother's Age",
-  ylab = "Birth Weight (ounces)"
-)
-plot(
-  births$income,
-  births$wt,
-  pch = 16,
-  cex.main = 0.75,
-  cex.lab = 0.75,
-  col = adjustcolor("firebrick", 0.25),
-  main = "Fig. 1.5.4: Household Income vs Birth Weight",
-  xlab = "Household Income (USD)",
-  ylab = "Birth Weight (ounces)"
-)
-```
-
-However, we see that the tested variables: mothers' education level, fathers' education level, mothers' age  at the termination of pregnancy, or household income have a very low or no correlation with the babies' weight.
-
+However, we saw that the tested variables: mothers' education level, fathers' education level, mothers' age  at the termination of pregnancy, and household income have a very low or no correlation with the babies' weight. See Appendix 3.1.5 for plots.
 
 We tried to test if any of the engineered variables: difference between father and mother height, and BMI, had a relationship with weight.
 
 According to Stulp et al. 2011, it was found that a difference between parental height contributed to whether or not the mother would require an Emergency Cesarean Section (ECS). Since ECS can be used when a baby is too big for the birth canal or to save the baby in before it comes to term, there is a possibility that it is related to birth weight.
 
-Looking at the heights of the mothers and the fathers, we see that majority of the couples had fathers who were taller than the mothers. It is also worth nothing that the mean baby weight when the father is taller than the mother is greater than the mean baby weight when the mother is taller than the father. This suggests a possible correlation between the difference in heights.
+Looking at the heights of the mothers and the fathers, we saw that majority of the couples had fathers who were taller than the mothers. It was also worth nothing that the mean baby weight when the father was taller than the mother is greater than the mean baby weight when the mother is taller than the father. This suggested a possible correlation between the difference in heights.
 
 ```{r 6}
 par(mfrow = c(1,2))
@@ -623,11 +549,14 @@ plot(
   ylab = "Birth Weight (ounces)",
   cex.main = 0.65
 )
+
+mean(imputedBirths[[1]][imputedBirths[[1]]$mht > imputedBirths[[1]]$fht, "wt"])
+mean(imputedBirths[[1]][imputedBirths[[1]]$mht <= imputedBirths[[1]]$fht, "wt"])
 ```
 
 Based on the plot, there is no obvious relationship between the difference in parental height and the babies' weight.
 
-BMI, as a relatively good indicator of health, would theoretically also be a good indicator of health of a newborn baby. We want to look at the mothers' BMI to see whether that would have a relationship with the baby's newborn weight.
+BMI, as a relatively good indicator of health, would theoretically also be a good indicator of health of a newborn baby. We wanted to look at the mothers' BMI to see whether that would have a relationship with the baby's newborn weight.
 
 ```{r BMI}
 plot(
@@ -641,10 +570,10 @@ plot(
 )
 ```
 
-Based on the data, there appears to be a small positive correlation between the mothers' BMI and the babies' weight.
+Based on the data, there appeared to be a small positive correlation between the mothers' BMI and the babies' weight.
 
 
-We did not consider gestation as a factor of birth weight because it was not something that the couple could know at the time of conception of the baby. 
+We did not consider gestation as a factor of birth weight because it was not information that the couple could know at the time of conception of the baby. 
 
 ```{r gestation}
 plot(
@@ -658,7 +587,7 @@ plot(
 )
 ```
 
-We also found that gestation was very closely related to births, indicating that predicting gestation period is conceptually similar to predicting birth weight.
+We also found that gestation was very closely related to births, indicating that predicting gestation period was conceptually similar to predicting birth weight.
 
 ### Outliers
 We discovered some values outside of the defined encodings. For example, in the marital column there were two 0s, which have no corresponding marital status. We overwrote those (likely) transcription errors with NAs which were later filled in with multiple imputation.
@@ -670,7 +599,7 @@ summary(factor(births$marital))
 
 ### Missing Data
 
-We see that 40% of the entries in both father's weight and father's height are NA, as well as 10% of the entries in income. Without father height, father weight, and income, the percentage of the original data considered would be reduced to 90.2%.
+We saw that 40% of the entries in both father's weight and father's height were NA, as well as 10% of the entries in income. Without father height, father weight, and income, the percentage of the original data considered would be reduced to 90.2%.
 
 ```{r NAs}
 N <- nrow(mendedBirths)
@@ -696,7 +625,7 @@ All the data was included and values using MICE were substituted. The three afor
 
 ## Candidate Model 1
 
-Model 1 is constructed using raw data with decoded categorical datasets. The automated selection process uses stepwise selection with direction set to both.
+Model 1 was constructed using raw data with decoded categorical datasets. The automated selection process uses stepwise selection with direction set to both.
 
 The model is as follows:
 
@@ -719,7 +648,7 @@ As explained preceeding figures 1.6.1 and 1.6.2 in the Data Exploration sub-sect
 
 According to a the study in Gold et al. (2010), babies of mixed race have a higher rate of low birth weight. We included a variate indicating whether the parents were the same ethnicity or not. We treated two parents of 'Other' ethnicity as being the same ethnicity, and if both parents were 'Mixed' ethnicity, then were categorized them as different ethnicity as well.
 
-We suspect that the body composition of the mother is more predictive than a linear combination of her height and weight. Using BMI will allow the model to incorporate a more complex relationship between the weight and height of a mother. For example being underweight, regardless of your height, may impact your pregnancy and hence the weight of the baby. Since a scalar BMI will only represent a linear relationship between birth weight and BMI, we included BMI categories under the hypothesis that both being underweight and overweight could have a negative impact on the birth weight.
+We suspected that the body composition of the mother is more predictive than a linear combination of her height and weight. Using BMI will allow the model to incorporate a more complex relationship between the weight and height of a mother. For example being underweight, regardless of your height, may impact your pregnancy and hence the weight of the baby. Since a scalar BMI will only represent a linear relationship between birth weight and BMI, we included BMI categories under the hypothesis that both being underweight and overweight could have a negative impact on the birth weight.
 
 BMI is defined as $\frac{\textrm{weight (kg)}}{\textrm{height}^2 (\textrm{m}^2)}$
 
@@ -738,9 +667,9 @@ Obese & > 30 \\
 \end{tabular}
 \end{center}
   
-We wanted to create a better combined measure of how the mother's smoking habits impact the pregnancy. We hypothesized that there existed a "dimishing returns" effect on the number of cigarettes smoked. ("Health Impact of Smoking", n.d.) demonstrates that it took a six-fold increase in the number of cigarettes smoked a day to double the increase of the likelihood multiplier of developing lung cancer. This is interpreted as evidence of a non-linear relationship, so we selected a logarithm of the number of cigarettes smoked as our measure of general health impact.
+We wanted to create a better combined measure of how the mother's smoking habits impact the pregnancy. We hypothesized that there existed a "diminishing returns" effect on the number of cigarettes smoked. ("Health Impact of Smoking", n.d.) demonstrates that it took a six-fold increase in the number of cigarettes smoked a day to double the increase of the likelihood multiplier of developing lung cancer. This is interpreted as evidence of a non-linear relationship, so we selected a logarithm of the number of cigarettes smoked as our measure of general health impact.
 
-Secondly, we consider how the health impact fades after quitting smoking. We hypothesized that the health impact would decay exponentially over time as the body recovers. We construct our smoking impact feature as the logarithm of the number of cigarettes smoked per day while smoking, decayed by the number of years since quitting (or preserved if smoking has continued or mother quit during pregnancy). This is parameterized by the "effect half-life" for the decay which had to be selected. We expect that the health impact on the mother of her smoking habits which this is supposed to represent will have an impact on the health of the pregnancy and the weight of the baby.
+Secondly, we considered how the health impact fades after quitting smoking. We hypothesized that the health impact would decay exponentially over time as the body recovered. We constructed our smoking impact feature as the logarithm of the number of cigarettes smoked per day while smoking, decayed by the number of years since quitting (or preserved if smoking has continued or mother quit during pregnancy). This is parameterized by the "effect half-life" for the decay which had to be selected. We expected that the health impact on the mother of her smoking habits, which this function is supposed to represent, would have an impact on the health of the pregnancy and the weight of the baby.
 
 The smoking impact is calculated as follows:
 $$
@@ -751,7 +680,7 @@ $$
 $$
 where ${\alpha}$ is the number of cigarettes smoked per day while smoking, $\beta$ is the number of years since quitting (0 if not having quit or having quit during pregnancy), and $\lambda$ is the health impact half life.
 
-After running an experiment find the value for $\lambda$ which gave it the most explanatory power of the baby weight in the context of the existing time and number of cigarette variates, the value we obtained was 0.1 (Appendix 2.2.5). It was apparent that the smaller the value of $\lambda$, the higher the $R^2$ value we obtained. At values this small, the smoking impact becomes 0 whenever the smoker has quit. We interpret this to mean that our measure of smoking impact did not add any explanatory power after the mother has quit smoking. However, it did still increase the $R^2$ when it was included with $\lambda = 0.1$, so we selected this value for the parameter.
+After running an experiment find the value for $\lambda$ which gave it the most explanatory power of the baby weight in the context of the existing time and number of cigarette variates, the value we obtained was 0.1 (Appendix 2.2.5). It was apparent that the smaller the value of $\lambda$, the higher the $R^2$ value we obtained. At values this small, the smoking impact becomes 0 regardless of whenever the smoker has quit. We interpreted this to mean that our measure of smoking impact did not add any explanatory power after the mother has quit smoking. However, it did still increase the $R^2$ when it was included with $\lambda = 0.1$, so we selected this value for the parameter.
 
 
 The model is as follows:
@@ -796,7 +725,7 @@ rownames(summaryTable) <- c("Basic Model", "Engineered Model")
 summaryTable 
 ```
 
-By comparing the Residual Standard Error in both the Basic and Engineered Model, we see that the difference between them is not very large. However, we do see that the Residual Standard Error for the Engineered Model is preferable to that of the Basic Model. Similarly, the difference between the R Squared values for both models do not differ by a large amount,but the R Squared value for the Engineered Model is more preferable than that of the Basic Model.
+By comparing the Residual Standard Error in both the Basic and Engineered Model, we saw that the difference between them was not very large. However, we also saw that the Residual Standard Error for the Engineered Model was preferable to that of the Basic Model. Similarly, the difference between the $R^2$ values for both models did not differ by a large amount, but the $R^2$ value for the Engineered Model was more preferable than that of the Basic Model.
 
 ## Diagnostic Plots
 
@@ -832,7 +761,7 @@ plot(
 )
 ```
 
-Looking at the Residual and Fitted plot, both models do not exhibit any specific trend in the points, hence suggesting that there is a linear relationship present. Similar to the Residual plot, the Normal Q-Q plot also shows strong Normality. However, there is no significant evidence that one model exhibits better results than the other, hence additional diagnostics are required.
+Looking at the Residual and Fitted plot, both models did not exhibit any specific trend in the points, hence suggesting that there was a linear relationship present. Similar to the Residual plot, the Normal Q-Q plot also showed strong Normality. However, there was no significant evidence that one model exhibited better results than the other, hence additional diagnostics were required.
 
 By looking at the plot of Cook's distance of the two models in Appendix 3.3.2 and Appendix 3.3.3, there is around the same number fo high influential data points in the model. The Engineered Model's data is overall more influential compared to the Basic model.
 
@@ -854,7 +783,7 @@ colnames(disp) <- c("Basic", "Engineered")
 disp
 ```
 
-Looking at the PRESS statistic and the AIC of both models, AIC is favouring the Basic Model, while the PRESS statistic favours the Engineered data. However the PRESS statistic has a larger relative difference in the two models compared to AIC, so overall the Engineered Model is preferred using these statistical analysis
+Looking at the PRESS statistic and the AIC of both models, AIC favoured the Basic Model, while the PRESS statistic favoured the Engineered data. However the PRESS statistic had a larger relative difference in the two models compared to AIC, so overall the Engineered Model was preferred using these statistical analyses.
 
 
 ## Cross-Validation
@@ -866,7 +795,7 @@ cvResults <- crossValidate(
 )
 ```
 
-Based on the rPMSEs, we see that the mean for the Engineered Model is greater than that of the Basic Model, and the standard deviation of the Engineered Model is less than that of the Basic Model.
+Based on the rPMSEs, we saw that the mean for the Engineered Model was greater than that of the Basic Model, and the standard deviation of the Engineered Model was less than that of the Basic Model.
 
 ```{r crossVData}
 rPMSEs <- cvResults$rPMSEs
@@ -903,7 +832,7 @@ plot(
 )
 ```
 
-Then, by plotting the Q-Q Plots of residuals of the predicted values vs actual residuals, we found that both models showed evidence of Normality, but for lighter babies, erred on the side of over-predicting their weight, and for heavier babies, erred on the side of under-predicting their weight. See Appendix Figure 1.9.
+Then, by plotting the Q-Q Plots of residuals of the predicted values vs actual residuals, we found that both models showed evidence of Normality, but for lighter babies, erred on the side of over-predicting their weight, and for heavier babies, erred on the side of under-predicting their weight. See Appendix 3.3.1.
 
 We then looked at the residual plots. Plotting residuals against fitted values, we saw evidence of the data not showing any non linear relationships in both models.
 
@@ -930,27 +859,27 @@ qqnorm(
 abline(a = 0, b = 20, lty = 2, lwd = 2, col = "blue")
 ```
 
-Comparing the different diagnostics of the two models, it is evident that the statistical diagnostic of the two models is very similar. However, by taking a look at the residual standard error, coefficients of determination, and PRESS statistic, the Engineered Model is a slightly better model compared to the Basic Model. However it is a lot more computationally complex than the basic model, but since we are only considering the model's predictive power in this course, the Engineered Model will be used for the discussion portion.
+Comparing the different diagnostics of the two models, it was evident that the statistical diagnostic of the two models was very similar. However, by taking a look at the residual standard error, coefficients of determination, and PRESS statistic, the Engineered Model was a slightly better model compared to the Basic Model. However it was a lot more computationally complex than the Basic Model, but since we are only considering the model's predictive power in this course, the Engineered Model will be used for the discussion portion.
 
 # Discussion
 
 ## Significance
 
-Looking at the p-values of the Engineered Model in Appendix 3.3.5, the most important factors that affects a baby's birth weight is the time since the mother quit smoking, the mother's ethnicity, the mother's height, the mBMI, and the parity, with the most significant being the mother's ethinicity and height. 
+Looking at the p-values of the Engineered Model in Appendix 3.3.5, the most important factors that affected a baby's birth weight is the time since the mother quit smoking, the mother's ethnicity, the mother's height, the mBMI, and the parity, with the most significant being the mother's ethnicity and height. 
 
 ## Behavioural Recommendations
 
-By comparing the different p-value and beta of the coefficients of the Engineered model, some behaivourals changes that the parents could make to have a higher birth weight are:
-* Refrain from smoking during pregenancy to lower the smoking impact
+By comparing the different p-values and betas of the coefficients of the Engineered model, some behaivoural changes that the parents could make to have a higher birth weight are:
+* Refrain from smoking during pregnancy to lower the smoking impact
 * Maintain a higher BMI
 
 ## High p-values
 
-Looking at Table 3.3.4, we see that there are many factors associated with a relatively high p-value: the mother's ethnicity when she's Mexican, Mixed or Other and the time since the mother quit smoking if she Still Smokes, if she Quit Less Than a Year Ago, 2-3 Years Ago, 3-4 Years Ago, 5-9 Years Ago or she Quit But Doesn't Know When.
+Looking at Appendix 3.3.4, we saw that there were many factors associated with a relatively high p-value: the mother's ethnicity when she's Mexican, Mixed or Other and the time since the mother quit smoking if she Still Smokes, if she Quit Less Than a Year Ago, 2-3 Years Ago, 3-4 Years Ago, 5-9 Years Ago or she Quit But Doesn't Know When.
 
-There were two reasons not to remove these variables. For example, when the mother is Mixed, the p-value is very high. However, we cannot remove the mother's ethnicity as a factor because that would remove other significant covariates, such as the mother's ethnicity when she is African-American.
+There were two reasons not to remove these variables, the first being that the removal of the variable could result in the removal of a significant covariate. For example, when the mother is Mixed, the p-value is very high. However, we cannot remove the mother's ethnicity as a factor because that would remove other significant covariates, such as the mother's ethnicity when she is African-American.
 
-Another reason we did not remove these variables was because of the percentage of the population that fell under those categories. For example, the number of people who Quit But Didn't Know When was very small: only 0.4% (See Appendix 3.3.7). This results in a large p-value as their results are less representative of the population than that of a more significant sample.
+The second reason we did not remove these variables was because of the percentage of the population that fell under those categories. For example, the number of people who Quit But Didn't Know When was very small: only 0.4% (See Appendix 3.3.7). This results in a large p-value as their results are less representative of the population than that of a more significant sample.
 
 ## Regression Assumptions
 
@@ -1046,25 +975,90 @@ Produces a histogram displaying the percent of the population each birth weight 
 
 ### Figure 1.3
 
-Produces a plot of mother's ethnicity against birth weight. Appears in Data Exploration.
-```{r ref.label = "3"}
+Produces a plot of mother's ethnicity against birth weight. Discussed in Data Exploration.
+
+```{r 3}
+plot(
+  births$meth,
+  births$wt,
+  col = adjustcolor("firebrick", 0.25),
+  pch = 16,
+  main = "Fig 1.3: Mother's Ethnicity vs Birth Weight",
+  xlab = "Mother's Ethnicity",
+  ylab = "Birth Weight (ounces)",
+  mar = c(1, 4, 1, 2) + 0.1
+)
 ```
 
 ### Figure 1.4
 
-Produces a plot of parity against birth weight. Appears in Data Exploration.
-```{r ref.label = "4"}
+Produces a plot of parity against birth weight. Discussed in Data Exploration.
+```{r 4}
+plot(
+  births$parity,
+  births$wt,
+  pch = 16,
+  col = adjustcolor("firebrick", 0.25),
+  main = "Fig. 1.4: Parity vs Birth Weight",
+  xlab = "Parity",
+  ylab = "Birth Weight (ounces)"
+)
 ```
 
 ### Figure 1.5.{1, 2, 3, 4}
 
-Produces plots of mother's education level, father's education level, mother's age at the termination of the pregnancy and household income against birth weight. Appears in Data Exploration. 
-```{r ref.label = "5"}
+Produces plots of mother's education level, father's education level, mother's age at the termination of the pregnancy and household income against birth weight. Discussed in Data Exploration. 
+```{r 5}
+par(mfrow = c(1, 2))
+plot(
+  births$med,
+  births$wt,
+  col = adjustcolor("firebrick", 0.25),
+  pch = 16,
+  cex.main = 0.75,
+  cex.lab = 0.75,
+  main = "Fig 1.5.1: Mother's Education vs Birth Weight",
+  xlab = "Mother's Education",
+  ylab = "Birth Weight (ounces)"
+)
+plot(
+  births$fed,
+  births$wt,
+  col = adjustcolor("firebrick", 0.25),
+  pch = 16,
+  cex.main = 0.75,
+  cex.lab = 0.75,
+  main = "Fig. 1.5.2: Father's Education vs Birth Weight",
+  xlab = "Father's Education",
+  ylab = "Birth Weight (ounces)"
+)
+plot(
+  births$mage,
+  births$wt,
+  pch = 16,
+  cex.main = 0.75,
+  cex.lab = 0.75,
+  col = adjustcolor("firebrick", 0.25),
+  main = "Fig. 1.5.3: Mother's Age vs Birth Weight",
+  xlab = " Mother's Age",
+  ylab = "Birth Weight (ounces)"
+)
+plot(
+  births$income,
+  births$wt,
+  pch = 16,
+  cex.main = 0.75,
+  cex.lab = 0.75,
+  col = adjustcolor("firebrick", 0.25),
+  main = "Fig. 1.5.4: Household Income vs Birth Weight",
+  xlab = "Household Income (USD)",
+  ylab = "Birth Weight (ounces)"
+)
 ```
 
 ### Figure 1.6.{1, 2}
 
-Produces a plot of the birth weight against the difference in height of the parents. Appears in Data Exploration.
+Produces a plot of the birth weight against the difference in height of the parents. Also prints the mean birth weight when the father is taller than the mother and vice versa. Appears in Data Exploration.
 ```{r ref.label = "6"}
 ```
 
@@ -1115,7 +1109,7 @@ Produces a Normal Q-Q plot for both models. Appears in Cross Validation.
 
 ### Figure 3.1
 
-Produces 
+Produces a Q-Q Plot of actual values against predicted values. Appears in Cross Validation.
 ```{r extraQQ, eval = TRUE}
 qqplot(
   cvResults$predictions$model1,
