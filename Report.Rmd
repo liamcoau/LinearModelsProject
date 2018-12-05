@@ -407,7 +407,7 @@ engineeredFeatureBirths <- lapply(
 
 # Summary
 
-The purpose of this study was to determine what factors affect a male baby's birth weight with information readily available when the couple conceives. A sample of 1236 newborn males was conducted and information was taken via a survey of the mothers. The factors considered in this study were mother's age, mother's weight, father's ethnicity, the amount of time since the mother had stopped smoking, and parity. Furthermore, we engineered variables showing the mothers' pregnancy BMI, a smoking index to reflect the affects of smoking on the mothers' bodies, whether or not the parents were of the same ethnicity, and the height difference between the father and the mother. These variables were created either because the given variates were not an accurate predictor of health, or because we thought they would also be predictors of a baby's weight. Results of the study show that ______.
+The purpose of this study was to determine what factors affect a male baby's birth weight with information readily available when the couple conceives. A sample of 1236 newborn males was conducted from 1960-1967 and information was taken via a survey of the mothers. The factors considered in this study were mother's age, mother's weight, father's ethnicity, the amount of time since the mother had stopped smoking, and parity. Furthermore, we engineered variables showing the mothers' pregnancy BMI, a smoking index to reflect the affects of smoking on the mothers' bodies, whether or not the parents were of the same ethnicity, and the height difference between the father and the mother. These variables were created either because the given variates were not an accurate predictor of health, or because we thought they would also be predictors of a baby's weight. Results of the study show that the two factors most significant to a baby's birth weight are the mother's ethnicity and height.
 
 
 # Model Selection
@@ -553,7 +553,8 @@ plot(
   pch = 16,
   main = "Fig. 1.6.1: Mother vs Father Height",
   xlab = "Mother's Height (inches)",
-  ylab = "Father's Height (inches)"
+  ylab = "Father's Height (inches)",
+  cex.main = 0.65
 )
 abline(coef = c(0, 1))
 plot(
@@ -563,7 +564,8 @@ plot(
   col = adjustcolor("firebrick", 0.25),
   main = "Fig. 1.6.2: Difference in Height vs Weight",
   xlab = "Difference in Height (inches)",
-  ylab = "Birth Weight (ounces)"
+  ylab = "Birth Weight (ounces)",
+  cex.main = 0.65
 )
 ```
 
@@ -856,7 +858,11 @@ Comparing the different diagnostics of the two models, it is evident that the st
 
 # Discussion
 
-Looking at the p-values of the Engineered Model in Appendix 3.3.4, the most important factors that affects a babies weight is the time since the mother quit smoking, the mother's ethnicity, the mother's height, the mBMI, and the parity, with the most significant being the mother's ethinicity and height. 
+## Significance
+
+Looking at the p-values of the Engineered Model in Appendix 3.3.4, the most important factors that affects a baby's birth weight is the time since the mother quit smoking, the mother's ethnicity, the mother's height, the mBMI, and the parity, with the most significant being the mother's ethinicity and height. 
+
+## Behavioural Recommendations
 
 By comparing the different p-value and beta of the coefficients of the Engineered model, some behaivourals changes that the parents could make to have a higher birth weight are:
 * Refrain from smoking during pregenancy to lower the smoking impact
@@ -952,67 +958,63 @@ knitr::opts_chunk$set(include = TRUE, echo = TRUE, eval = FALSE)
 
 ### Figure 1.1
 
-Produces a pair plot of the variables birth weight, mother height, mother weight, time (since quitting smoking), and number (number of cigarettes smoke per day while smoking)
+Produces a pair plot of the variables birth weight, mother height, mother weight, time (since quitting smoking), and number (number of cigarettes smoke per day while smoking). Appears in Data Exploration.
 ```{r ref.label = "1"}
 ```
 
 ### Figure 1.2
 
-Plot
+Produces a histogram displaying the percent of the population each birth weight represents with a Normal distribution curve superimposed. Appears in Data Exploration.
 ```{r ref.label = "2"}
 ```
 
 ### Figure 1.3
 
-Plot
+Produces a plot of mother's ethnicity against birth weight. Appears in Data Exploration.
 ```{r ref.label = "3"}
 ```
 
 ### Figure 1.4
 
-Plot
+Produces a plot of parity against birth weight. Appears in Data Exploration.
 ```{r ref.label = "4"}
 ```
 
 ### Figure 1.5.{1, 2, 3, 4}
 
-Plot
+Produces plots of mother's education level, father's education level, mother's age at the termination of the pregnancy and household income against birth weight. Appears in Data Exploration. 
 ```{r ref.label = "5"}
 ```
 
 ### Figure 1.6.{1, 2}
 
-Plots the birth weight against the difference in height of the parents
+Produces a plot of the birth weight against the difference in height of the parents. Appears in Data Exploration.
 ```{r ref.label = "6"}
 ```
 
 ### Figure 1.7
 
-Plots the birth weight against the BMI of the mother
+Produces a plot of the birth weight against the BMI of the mother. Appears in Data Exploration.
 ```{r ref.label = "BMI"}
 ```
 
-
 ### Figure 1.8
 
-Plot
+Produces a plot of gestation period against birth weight. Appears in Data Exploration.
 ```{r ref.label = "gestation"}
 ```
 
-
 ### Table 1.9
 
-Table
+Produces a table of the number of occurrences per marital status category. Appears in Outliers.
 ```{r ref.label = "outliers"}
 ```
 
-
 ### Table 1.10
 
-Table
+Produces a table of the percentage of NAs in the dataset by variable. Appears in Missing Data.
 ```{r ref.label = "NAs"}
 ```
-
 
 ### Figure 2.1
 
@@ -1102,9 +1104,13 @@ plot(engineeredBirthWeightModel, cex = 0.4, which = c(1, 2), pch = 19, lwd = 2, 
 
 ### Table 3.6
 
+Produces a table of the percentage of entries in each category for time. Appears in Discussion.
 ```{r percentTime}
 # Percentage of entries in each category for time
-sapply(0:9, function(i) sum(na.omit(births$time == i))/1236)
+percentTime <- data.frame(c(0, 1, 2, 3, 4, 5, 6, 7, 8, 9), 
+           sapply(0:9, function(i) sum(na.omit(births$time == i))/N))
+colnames(percentTime) <- c("Category Corresponding to Time", "Percentage of the Population")
+percentTime
 ```
 
 ## Section 4: Model Selection
