@@ -792,7 +792,7 @@ summaryTable
 
 By comparing the Residual Standard Error in both the Basic and Engineered Model, we see that the difference between them is not very large. However, we do see that the Residual Standard Error for the Engineered Model is preferable to that of the Basic Model. Similarly, the difference between the R Squared values for both models do not differ by a large amount,but the R Squared value for the Engineered Model is more preferable than that of the Basic Model.
 
-## Plot Diagnostic
+## Diagnostic Plots
 
 ###Basic Birth Weight Model
 
@@ -863,7 +863,7 @@ Based on the rPMSEs, we see that the mean for the Engineered Model is greater th
 ```{r crossVData}
 rPMSEs <- cvResults$rPMSEs
 PMSETable <- data.frame(c(mean(rPMSEs$model1), sd(rPMSEs$model1)), c(mean(rPMSEs$model2), sd(rPMSEs$model2)))
-colnames(PMSETable) <- c("Basic Mode", "Engineered Model")
+colnames(PMSETable) <- c("Basic Model", "Engineered Model")
 rownames(PMSETable) <- c("Mean", "SD")
 PMSETable
 
@@ -942,12 +942,12 @@ Looking at Table 3.3, we see that there are many factors associated with a relat
 
 There were two reasons not to remove these variables. For example, when the mother is Mixed, the p-value is very high. However, we cannot remove the mother's ethnicity as a factor because that would remove other significant covariates, such as the mother's ethnicity when she is African-American.
 
-Another reason we did not remove these variables was because of the percentage of the population that fell under those categories. For example, the number of people who Quit But Didn't Know When was very small: only 0.4% (See Appendix 3.3.6). This results in a large p-value as their results are less representative of the population than that of a more significant sample.
+Another reason we did not remove these variables was because of the percentage of the population that fell under those categories. For example, the number of people who Quit But Didn't Know When was very small: only 0.4% (See Appendix 3.3.5). This results in a large p-value as their results are less representative of the population than that of a more significant sample.
 
 ## Regression Assumptions
 
-Looking at Figure 2.3, we see that the Residual vs Fitted plot has a relatively horizontal line, indicating that the linearity of data assumption has been preserved. We also see that the residuals roughly follow a Normal distribution from the Q-Q Plot.  
-The Scale-Location Plot shows a horizontal line, slightly curved downward. Furthermore, the spread of the points is close to equal, with there being slightly more points above the line. Overall, the homoscedasticity of variance assumption is preserved. See Appendix 3.3.5.
+Looking at Appendix 3.3.4, we see that the Residual vs Fitted plot has a relatively horizontal line, indicating that the linearity of data assumption has been preserved. We also see that the residuals roughly follow a Normal distribution from the Q-Q Plot.  
+The Scale-Location Plot shows a horizontal line, slightly curved downward. Furthermore, the spread of the points is close to equal, with there being slightly more points above the line. Overall, the homoscedasticity of variance assumption is preserved. See Appendix 3.3.4.
 
 \pagebreak
 
@@ -1078,6 +1078,7 @@ Produces a table of the number of occurrences per marital status category. Appea
 ```{r ref.label = "outliers"}
 ```
 
+
 ### Table 1.10
 
 Produces a table of the percentage of NAs in the dataset by variable. Appears in Missing Data.
@@ -1086,48 +1087,27 @@ Produces a table of the percentage of NAs in the dataset by variable. Appears in
 
 ### Figure 2.1
 
-Plot
-```{r ref.label = "leverage"}
+Produces a table of AIC and PRESS Statistic value for both models. Appears PRESS Statistic and AIC.
+```{r ref.label = "PRESSandAIC"}
 ```
 
-### Figure 2.2
+#### Figure 2.2
 
-Plot
-```{r ref.label = "PRESSandAIC"}
+Produces a table of the mean and standard deviations for each model's rPMSE, a boxplot comparison of both rPMSEs, and plots residuals vs fitted values for each model. Appears in Cross Validation.
+```{r ref.label = "crossVData"}
+
 ```
 
 ### Figure 2.3
 
-Plot
-```{r ref.label = "crossValidation"}
-```
-
-### Figure 2.4
-
-Plot
+Produces a Normal Q-Q plot for both models. Appears in Cross Validation.
 ```{r ref.label = "qq"}
 ```
 
 
 ### Figure 3.1
 
-Plot
-```{r violateEqualVar, eval = TRUE}
-round(
-  sapply(
-    0:13,
-    function (parity) c(
-      mean(births[births$parity == parity, "wt"]),
-      sd(births[births$parity == parity, "wt"])
-    )
-  ),
-  2
-)
-```
-
-### Figure 3.2
-
-Plot
+Produces 
 ```{r extraQQ, eval = TRUE}
 qqplot(
   cvResults$predictions$model1,
@@ -1148,8 +1128,9 @@ qqplot(
 abline(a = 0, b = 1, lty = 2, col = "red")
 ```
 
-### Table 3.3 - Basic Model Coefficients
+### Table 3.2 - Basic Model Coefficients
 
+Produces a summary table of the Basic Model.
 ```{r pValue1, eval = TRUE}
 #Basic coefficients
 basicCoeff <- data.frame(summary(basicBirthWeightModel)$coefficients)
@@ -1157,20 +1138,23 @@ basicCoeff <- data.frame(summary(basicBirthWeightModel)$coefficients)
 format(round(basicCoeff, 3), digits = 2, scientific = FALSE)
 ```
 
-### Table 3.4 - Engineered Model Coefficients
+### Table 3.3 - Engineered Model Coefficients
+
+Produces a summary table of the Engineered Model. Appears in Discussion.
 ```{r pValue2, eval = TRUE}
 #Engineered coefficients
 enginCoeff <- data.frame(summary(engineeredBirthWeightModel)$coefficients)
 format(round(enginCoeff, 3), digits = 2, scientific = FALSE)
 ```
 
-### Figure 3.5
+### Figure 3.4
 
+Produces a residuals vs fitted plot and a Normal Q-Q Plot for the Engineered Model. Appears in Discussion.
 ```{r summaryPlots2, eval = TRUE}
-plot(engineeredBirthWeightModel, cex = 0.4, which = c(1, 2), pch = 19, lwd = 2, main = NULL)
+plot(engineeredBirthWeightModel, cex = 0.4, which = c(1, 3), pch = 19, lwd = 2, main = NULL)
 ```
 
-### Table 3.6
+### Table 3.5
 
 Produces a table of the percentage of entries in each category for time. Appears in Discussion.
 ```{r percentTime}
@@ -1191,4 +1175,10 @@ percentTime
 ### Chunk 2
 
 ```{r ref.label = "model2"}
+```
+
+### Chunk 3
+
+Executes cross validation to compare candidate models. Appears in Cross Validation.
+```{r ref.label = "crossValidation"}
 ```
