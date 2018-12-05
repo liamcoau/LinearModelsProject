@@ -54,9 +54,8 @@ k <- 5
 poundsToKg <- 0.453592
 inchesToM <- 0.0254
 
-# The boundaries for BMI categories
-# See this page for the source:
-# https://www.mayoclinic.org/healthy-lifestyle/pregnancy-week-by-week/in-depth/pregnancy-weight-gain/art-20044360?pg=1
+# The boundaries for BMI categories ("Pregnancy weight gain: What's healthy?", 2017)
+
 underweightNormalBoundary <- 18.5
 normalOverweightBoundary <- 25
 overweightObeseBoundary <- 30
@@ -505,7 +504,7 @@ curve(
 
 Looking at the data, we see that the distribution of the babies' weight is close to Normal, but has spikes in frequency in certain areas. This likely corresponds to rounding and measurement discrepancies.
 
-We then decided to test the correlation between the mothers' ethnicity and the babies' weight. According to a 2009 study published in the British Journal of Nutrition, BMI was found to be an inaccurate measurement for non-white individuals. BMI, as a measure of weight proportional to the area of an individual's body, was found to differ among races. Hence, it seems to be a viable factor when considering the weight of a newborn baby.
+We then decided to test the correlation between the mothers' ethnicity and the babies' weight. According to a 2009 study published in the British Journal of Nutrition, BMI was found to be an inaccurate measurement for non-white individuals. BMI, as a measure of weight proportional to the area of an individual's body, was found to differ among races (Dovey, 2018). Hence, it seems to be a viable factor when considering the weight of a newborn baby.
 
 ```{r 3}
 plot(
@@ -593,9 +592,9 @@ plot(
 However, we see that the tested variables: mothers' education level, fathers' education level, mothers' age  at the termination of pregnancy, or household income have a very low or no correlation with the babies' weight.
 
 
-We also tried to test if any of the engineered variables: difference between father and mother height, and BMI, had a relationship with weight.
+We tried to test if any of the engineered variables: difference between father and mother height, and BMI, had a relationship with weight.
 
-According to a 2011 study, it was found that a difference between parental height contributed to whether or not the mother would require an Emergency Cesarean Section (ECS). Since ECS can be used when a baby is too big for the birth canal or to save the baby in before it comes to term, there is a possibility that it is related to birth weight.
+According to Stulp et al. 2011, it was found that a difference between parental height contributed to whether or not the mother would require an Emergency Cesarean Section (ECS). Since ECS can be used when a baby is too big for the birth canal or to save the baby in before it comes to term, there is a possibility that it is related to birth weight.
 
 Looking at the heights of the mothers and the fathers, we see that majority of the couples had fathers who were taller than the mothers. It is also worth nothing that the mean baby weight when the father is taller than the mother is greater than the mean baby weight when the mother is taller than the father. This suggests a possible correlation between the difference in heights.
 
@@ -718,7 +717,7 @@ For our second model, we decided to try engineered some features which we hypoth
 
 As explained preceeding figures 1.6.1 and 1.6.2 in the Data Exploration sub-section, we know that the difference in the height of the parents can impact pregnancy outcomes. We thus decided to include this as an engineered factor.
 
-According to this study (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2867623/), babies of mixed race have a higher rate of low birth weight. We included a variate indicating whether the parents were the same ethnicity or not. We treated two parents of 'Other' ethnicity as being the same ethnicity, and if both parents were 'Mixed' ethnicity, then were categorized them as different ethnicity as well.
+According to a the study in Gold et al. (2010), babies of mixed race have a higher rate of low birth weight. We included a variate indicating whether the parents were the same ethnicity or not. We treated two parents of 'Other' ethnicity as being the same ethnicity, and if both parents were 'Mixed' ethnicity, then were categorized them as different ethnicity as well.
 
 We suspect that the body composition of the mother is more predictive than a linear combination of her height and weight. Using BMI will allow the model to incorporate a more complex relationship between the weight and height of a mother. For example being underweight, regardless of your height, may impact your pregnancy and hence the weight of the baby. Since a scalar BMI will only represent a linear relationship between birth weight and BMI, we included BMI categories under the hypothesis that both being underweight and overweight could have a negative impact on the birth weight.
 
@@ -739,7 +738,7 @@ Obese & > 30 \\
 \end{tabular}
 \end{center}
   
-We wanted to create a better combined measure of how the mother's smoking habits impact the pregnancy. We hypothesized that there existed a "dimishing returns" effect on the number of cigarettes smoked. (https://www.med.uottawa.ca/sim/data/Smoking_and_Health_e.htm) demonstrates that it took a six-fold increase in the number of cigarettes smoked a day to double the increase of the likelihood multiplier of developing lung cancer. This is interpreted as evidence of a non-linear relationship, so we selected a logarithm of the number of cigarettes smoked as our measure of general health impact.
+We wanted to create a better combined measure of how the mother's smoking habits impact the pregnancy. We hypothesized that there existed a "dimishing returns" effect on the number of cigarettes smoked. ("Health Impact of Smoking", n.d.) demonstrates that it took a six-fold increase in the number of cigarettes smoked a day to double the increase of the likelihood multiplier of developing lung cancer. This is interpreted as evidence of a non-linear relationship, so we selected a logarithm of the number of cigarettes smoked as our measure of general health impact.
 
 Secondly, we consider how the health impact fades after quitting smoking. We hypothesized that the health impact would decay exponentially over time as the body recovers. We construct our smoking impact feature as the logarithm of the number of cigarettes smoked per day while smoking, decayed by the number of years since quitting (or preserved if smoking has continued or mother quit during pregnancy). This is parameterized by the "effect half-life" for the decay which had to be selected. We expect that the health impact on the mother of her smoking habits which this is supposed to represent will have an impact on the health of the pregnancy and the weight of the baby.
 
@@ -1206,3 +1205,22 @@ percentTime
 Executes cross validation to compare candidate models. Appears in Cross Validation.
 ```{r ref.label = "crossValidation"}
 ```
+
+# References
+
+Dovey, D. (2016). Does Race Affect Weight? BMI Differs Among The Races According To Muscle Mass And Fat Distribution. https://www.medicaldaily.com/does-race-affect-weight-bmi-differs-among-races-according-muscle-mass-and-fat-397199?fbclid=IwAR1zY9LfbIQbdz7KSh03FYUMBumtoT3El7N6cSagIqj1hjLgnmPI6m57emA
+
+Gold, K., DeMonner, S., Lantz, P. and Hayward, R. (2010). Prematurity and Low Birth Weight as Potential Mediators of Higher Stillbirth Risk in Mixed Black/White Race Couples. https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2867623/
+
+Stulp, G., Verhulst, S., Pollet, T. Nettle, D. and Buunk, A. (2011) Parental Height Differences Predict the Need for an Emergency Caesarean Section. https://journals.plos.org/plosone/article?id=10.1371%2Fjournal.pone.0020497&fbclid=IwAR0pUDZAm8H_W18vp8kgHWgeR7TpA36SENZW-hQ3KNDWe20O6Qj42giOvy4.
+
+Wilson, D. (2018). What's the Best Age to Get Pregnant?. https://www.healthline.com/health/pregnancy/best-age-to-get-pregnant?fbclid=IwAR3a0YPMsveJAL6u_QlyxOosYESKd2heifu1dh_VZbprF3UJ2YN4sd6AEpc.
+
+Woolston, C. (n.d.). How smoking during pregnancy affects you and your baby. https://www.babycenter.com/0_how-smoking-during-pregnancy-affects-you-and-your-baby_1405720.bc?fbclid=IwAR2jTMTlW9fh-GH2I5asb1x584dbvC4BpA-oTvIGfcd0t_gVYurZYB4vyTY.
+
+Health Impact of Smoking. (n.d.). https://www.med.uottawa.ca/sim/data/Smoking_and_Health_e.htm.
+
+Pregnancy weight gain: What's healthy?. (2017). https://www.mayoclinic.org/healthy-lifestyle/pregnancy-week-by-week/in-depth/pregnancy-weight-gain/art-20044360?pg=1.
+
+
+
