@@ -697,8 +697,6 @@ plot(engineeredBirthWeightModel, cex = 0.4, pch = 19, main = NULL)
 
 Looking at the Residual and Fitted plot, both models do not exhibit any specific trend in the points, hence suggesting that there is a linear relationship present. Similar to the Residual plot, the Normal Q-Q plot also shows strong Normality. However, there is no significant evidence that one model exhibits better results than the other, hence additional diagnostics are required.
 
-Looking at the plot of the Cook's distance vs Leverage, both models have one extremely high influential data point and about the same amount of high influential data points. This can indicate that by removing these values, the effects on the two models are similar.
-
 ## PRESS Stastic and AIC
 ```{r PRESSandAIC}
 press1 <- resid(basicBirthWeightModel) / (1 - hatvalues(basicBirthWeightModel)) 
