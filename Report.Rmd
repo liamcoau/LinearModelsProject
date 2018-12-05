@@ -857,7 +857,12 @@ Comparing the different diagnostics of the two models, it is evident that the st
 
 # Discussion
 
-Looking at the p-values of the Engineered Model in Appendix 3.3.4, the most important factors that affects a babies weight is the time since the mother quit smoking, the mother's ethnicity, the mother's height, the mBMI, and the parity, with the most significant being the 
+Looking at the p-values of the Engineered Model in Appendix 3.3.4, the most important factors that affects a babies weight is the time since the mother quit smoking, the mother's ethnicity, the mother's height, the mBMI, and the parity, with the most significant being the mother's ethinicity and height. 
+
+By comparing the different p-value and beta of the coefficients of the Engineered model, some behaivourals changes that the parents could make to have a higher birth weight are:
+* Refrain from smoking during pregenancy to lower the smoking impact
+* Maintain a higher BMI
+
 ## Regression Assumptions
 
 Looking at Figure 2.3, we see that the Residual vs Fitted plot has a relatively horizontal line, indicating that the linearity of data assumption has been preserved. We also see that the residuals roughly follow a Normal distribution from the Q-Q Plot.  
@@ -1079,7 +1084,6 @@ format(round(basicCoeff, 3), digits = 2, scientific = FALSE)
 ```{r pValue2, eval = TRUE}
 #Engineered coefficients
 enginCoeff <- data.frame(summary(engineeredBirthWeightModel)$coefficients)
-
 format(round(enginCoeff, 3), digits = 2, scientific = FALSE)
 ```
 
