@@ -4,7 +4,7 @@ author: Liam Coleman-Aulenbach, Venessa Keung, Lucy Wang
 output: pdf_document
 documentclass: article
 header-includes:
-  - \geometry{margin=0.8in}
+  - \geometry{margin=0.75in}
 ---
 
 
@@ -12,12 +12,12 @@ header-includes:
 # Knitr Configuration
 knitr::opts_chunk$set(
   comment = NA,
-  cache = TRUE,
+  cache = FALSE,
   include = TRUE,
   echo = FALSE,
   results = "markup",
   fig.show = "asis",
-  fig.height = 3.5,
+  fig.height = 3.2,
   fig.align = "center"
 )
 ```
@@ -427,7 +427,7 @@ pairs(
 )
 ```
 
-We found that the babies' weight had a positive relationship with the mothers' weight as well as with the mothers' height. We also see that the mothers' weight has a positive relationship with the mothers' height.
+We found that the babies' weight had a positive correlation with the mothers' weight as well as with the mothers' height. We also see that the mothers' weight has a positive correlation with the mothers' height.
 
 We also tried to find the distribution of the babies' weight. In doing so, we tested to see if the babies' weight followed a Normal distribution. If it did not, we would have had to apply a transformation to the data to make it follow a Normal distribution.
 
@@ -450,7 +450,7 @@ curve(dnorm(x, mean(births$wt), sd(births$wt)),
 
 Looking at the data, we see that the distribution of the babies' weight is close to Normal, but has spikes in frequency in certain areas. This likely corresponds to rounding and measurement discrepancies.
 
-We then decided to test the relationship between the mothers' ethnicity and the babies' weight. According to a 2009 study published in the British Journal of Nutrition, BMI was found to be an inaccurate measurement for non-white individuals. BMI, as a measure of weight proportional to the area of an individual's body, was found to differ among races. Hence, it seems to be a viable factor when considering the weight of a newborn baby.
+We then decided to test the correlation between the mothers' ethnicity and the babies' weight. According to a 2009 study published in the British Journal of Nutrition, BMI was found to be an inaccurate measurement for non-white individuals. BMI, as a measure of weight proportional to the area of an individual's body, was found to differ among races. Hence, it seems to be a viable factor when considering the weight of a newborn baby.
 
 ```{r 3}
 plot(
@@ -465,7 +465,7 @@ plot(
 )
 ```
 
-However, based on the data, there was no evidence of a linear relationship between only the mothers' ethnicity and the babies' weight.
+However, based on the data, there was is no or little correlation between only the mothers' ethnicity and the babies' weight.
 
 Next, we tested for a relationship between parity and the babies' weight. As a mother's body adjusts to pregnancy, it would make sense for the babies' weight to be affected.
 
@@ -481,7 +481,7 @@ plot(
 )
 ```
 
-Based on the data, we see no evidence of a linear relationship between only babies' weight and parity.
+Based on the data, we see that there there is minimal correlation between only babies' weight and parity.
 
 Finally, we tested for a relationship between the mothers' education level, fathers' education level, mothers' age at the termination of the pregnancy, and household income with the babies' weight. A household with a higher income would be able to provide more resources to a pregnant mother and would have a higher likelihood of having a healthy mother, who would likely give birth a baby with a healthy baby weight. A household with a higher income would likely have a highly educated mother, or highly educated father, or both.
 
@@ -535,14 +535,14 @@ plot(
 )
 ```
 
-However, we see that none of the tested variables: mothers' education level, fathers' education level, mothers' age  at the termination of pregnancy, or household income have a linear relationship with the babies' weight.
+However, we see that the tested variables: mothers' education level, fathers' education level, mothers' age  at the termination of pregnancy, or household income have a very low or no correlation with the babies' weight.
 
 
 We also tried to test if any of the engineered variables: difference between father and mother height, and BMI, had a relationship with weight.
 
 According to a 2011 study, it was found that a difference between parental height contributed to whether or not the mother would require an Emergency Cesarean Section (ECS). Since ECS can be used when a baby is too big for the birth canal or to save the baby in before it comes to term, there is a possibility that it is related to birth weight.
 
-Looking at the heights of the mothers and the fathers, we see that majority of the couples had fathers who were taller than the mothers. It is also worth nothing that the mean baby weight when the father is taller than the mother is greater than the mean baby weight when the mother is taller than the father. This suggests a possible relationship between the difference in heights.
+Looking at the heights of the mothers and the fathers, we see that majority of the couples had fathers who were taller than the mothers. It is also worth nothing that the mean baby weight when the father is taller than the mother is greater than the mean baby weight when the mother is taller than the father. This suggests a possible correlation between the difference in heights.
 
 ```{r 6}
 par(mfrow = c(1,2))
@@ -583,7 +583,7 @@ plot(
 )
 ```
 
-Based on the data, there appears to be a small positive relationship between the mothers' BMI and the babies' weight.
+Based on the data, there appears to be a small positive correlation between the mothers' BMI and the babies' weight.
 
 
 We did not consider gestation as a factor of birth weight because it was not something that the couple could know at the time of conception of the baby. 
@@ -642,6 +642,16 @@ Model 1 is constructed using raw data with decoded categorical datasets. The aut
 
 The model is as follows:
 
+```{r test}
+dataset = craftFeatures(mendedBirths)
+Mmax <- lm(wt ~ (. - gestation - smoke - time - med - fed - income- marital - meth - feth - mBMICategory - htDiff - lateMom)^2, data = dataset)
+
+beta.max <- coef(Mmax)
+names(beta.max)[is.na(beta.max)]
+anyNA(coef(Mmax))
+
+```
+
 ```{r model1}
 basicBirthWeightModel <- selectModel(
   decodedImputedBirths,
@@ -693,15 +703,14 @@ After running an experiment find the value for $\lambda$ which gave it the most 
 
 The model is as follows:
 
-### Automated Model Selection
 ```{r model2}
 engineeredBirthWeightModel <- selectModel(
   engineeredFeatureBirths,
   "wt",
   excludedVars = c("gestation", "smoke", "time", "fht", "mBMICategory", "income",
-                   "marital", "med", "fed", "meth", "feth", "fht", "fwt"),
-  specialTerms = c("mBMICategory", "time", "income", "marital", "med", "fed", 
-                   "feth", "meth", "fht", "fwt")
+                   "marital", "med", "fed", "meth", "feth", "htDiff", "lateMom"),
+  specialTerms = c("time", "fht", "mBMICategory", "income",
+                   "marital", "med", "fed", "meth", "feth", "htDiff", "lateMom")
 )
 engineeredBirthWeightModelMeanAIC <- meanAIC(
   engineeredBirthWeightModel,
@@ -712,8 +721,7 @@ engineeredBirthWeightModel$call
 
 
 # Model Diagnostics
-
-## Coefficients 
+ 
 ## Summary Statstics
 
 ```{r summaryStastics}
@@ -736,6 +744,8 @@ paste("Table 2.1")
 summaryTable 
 ```
 
+By comparing the Residual Standard Error in both the Basic and Engineered Model, we see that the difference between them is not very large. However, we do see that the Residual Standard Error for the Engineered Model is preferable to that of the Basic Model. Similarly, the difference between the R Squared values for both models do not differ by a large amount,but the R Squared value for the Engineered Model is more preferable than that of the Basic Model.
+
 ## Plot Diagnostic
 
 ###Basic Birth Weight Model
@@ -743,7 +753,7 @@ summaryTable
 Figure 2.2
 ```{r plotDiagnostic1}
 layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
-plot(basicBirthWeightModel, cex = 0.4, pch = 19, main = NULL)
+plot(basicBirthWeightModel, cex = 0.4, which = c(1, 2), pch = 19, lwd = 2, main = NULL)
 ```
 
 ###Engineered Birth Model Plots
@@ -751,7 +761,7 @@ plot(basicBirthWeightModel, cex = 0.4, pch = 19, main = NULL)
 Figure 2.3
 ```{r plotDiagnostic2}
 layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
-plot(engineeredBirthWeightModel, cex = 0.4, pch = 19, main = NULL)
+plot(engineeredBirthWeightModel, cex = 0.4, which = c(1, 2), pch = 19, lwd = 2, main = NULL)
 ```
 
 Looking at the Residual and Fitted plot, both models do not exhibit any specific trend in the points, hence suggesting that there is a linear relationship present. Similar to the Residual plot, the Normal Q-Q plot also shows strong Normality. However, there is no significant evidence that one model exhibits better results than the other, hence additional diagnostics are required.
@@ -795,9 +805,9 @@ colnames(PMSETable) <- c("Basic Mode", "Engineered Model")
 rownames(PMSETable) <- c("Mean", "SD")
 PMSETable
 
-layout(matrix(c(1, 1, 2, 3), 2, 2, byrow = TRUE))
 boxplot(list(model1rPMSE = rPMSEs$model1, model2rPMSE = rPMSEs$model2), 
         main = "Comparison of rPMSEs")
+layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
 plot(
   cvResults$predictions$model1,
   cvResults$residuals$model1,
@@ -819,7 +829,6 @@ plot(
 ```
 
 Then, by plotting the Q-Q Plots of residuals of the predicted values vs actual residuals, we found that both models showed evidence of Normality, but for lighter babies, erred on the side of over-predicting their weight, and for heavier babies, erred on the side of under-predicting their weight. See Appendix Figure 1.9.
-
 
 We then looked at the residual plots. Plotting residuals against fitted values, we saw evidence of the data not showing any non linear relationships in both models.
 
@@ -844,12 +853,15 @@ qqnorm(
 abline(a = 0, b = 20, lty = 2, lwd = 2, col = "blue")
 ```
 
+Comparing the different diagnostics of the two models, it is evident that the statistical diagnostic of the two models is very similar. However, by taking a look at the residual standard error, coefficients of determination, and PRESS statistic, the Engineered Model is a slightly better model compared to the Basic Model. However it is a lot more computationally complex than the basic model, but since we are only considering the model's predictive power in this course, the Engineered Model will be used for the discussion portion.
+
 # Discussion
 
+Looking at the p-values of the Engineered Model in Appendix 3.3.4, the most important factors that affects a babies weight is the time since the mother quit smoking, the mother's ethnicity, the mother's height, the mBMI, and the parity, with the most significant being the 
 ## Regression Assumptions
 
 Looking at Figure 2.3, we see that the Residual vs Fitted plot has a relatively horizontal line, indicating that the linearity of data assumption has been preserved. We also see that the residuals roughly follow a Normal distribution from the Q-Q Plot.  
-The Scale-Location Plot shows a horizontal line, slightly curved downward. Furthermore, the spread of the points is close to equal, with there being slightly more points above the line. Overall, the homoscedasticity of variance assumption is preserved. See Appendix Figure 3.4.
+The Scale-Location Plot shows a horizontal line, slightly curved downward. Furthermore, the spread of the points is close to equal, with there being slightly more points above the line. Overall, the homoscedasticity of variance assumption is preserved. See Appendix 3.3.5.
 
 \pagebreak
 
@@ -1054,17 +1066,28 @@ qqplot(
 abline(a = 0, b = 1, lty = 2, col = "red")
 ```
 
-### Table 3.3
+### Table 3.3 - Basic Model Coefficients
 
-```{r pValue, eval = TRUE}
-#coefficients
+```{r pValue1, eval = TRUE}
+#Basic coefficients
 basicCoeff <- data.frame(summary(basicBirthWeightModel)$coefficients)
-enginCoeff <- data.frame(summary(engineeredBirthWeightModel)$coefficients)
 
-format(basicCoeff, digits = 2, scientific = FALSE)
-format(enginCoeff, digits = 2, scientific = FALSE)
+format(round(basicCoeff, 3), digits = 2, scientific = FALSE)
 ```
 
+### Table 3.4 - Engineered Model Coefficients
+```{r pValue2, eval = TRUE}
+#Engineered coefficients
+enginCoeff <- data.frame(summary(engineeredBirthWeightModel)$coefficients)
+
+format(round(enginCoeff, 3), digits = 2, scientific = FALSE)
+```
+
+### Figure 3.5
+
+```{r summaryPlots2, eval = TRUE}
+plot(engineeredBirthWeightModel, cex = 0.4, which = c(1, 2), pch = 19, lwd = 2, main = NULL)
+```
 ## Section 4: Model Selection
 
 ### Chunk 1
