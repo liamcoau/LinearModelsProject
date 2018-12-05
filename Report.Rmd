@@ -706,6 +706,7 @@ engineeredBirthWeightModel$call
  
 ## Summary Statistics
 
+#### Table 2.1: Comparison of Model Fits
 ```{r summaryStastics}
 # residual standard error
 basicRes <- summary(basicBirthWeightModel)$sigma
@@ -731,7 +732,7 @@ By comparing the Residual Standard Error in both the Basic and Engineered Model,
 
 ### Basic Birth Weight Model
 
-Figure 2.2
+#### Figure 2.2: Basic Model Residuals
 ```{r plotDiagnostic1}
 layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
 plot(
@@ -745,9 +746,9 @@ plot(
 )
 ```
 
-###Engineered Birth Model Plots
+### Engineered Birth Weight Model
 
-Figure 2.3
+#### Figure 2.3: Engineered Model Residuals
 ```{r plotDiagnostic2}
 layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
 plot(
@@ -766,6 +767,8 @@ Looking at the Residual and Fitted plot, both models did not exhibit any specifi
 By looking at the plot of Cook's distance of the two models in Appendix 3.3.2 and Appendix 3.3.3, there is around the same number fo high influential data points in the model. The Engineered Model's data is overall more influential compared to the Basic model.
 
 ## PRESS Statistic and AIC
+
+#### Table 2.4: Comparison of Models' AIC and PRESS
 ```{r PRESSandAIC}
 press1 <- resid(basicBirthWeightModel) / (1 - hatvalues(basicBirthWeightModel)) 
 press2 <- resid(engineeredBirthWeightModel) / (1 - hatvalues(engineeredBirthWeightModel))
@@ -783,8 +786,9 @@ colnames(disp) <- c("Basic", "Engineered")
 disp
 ```
 
-Looking at the PRESS statistic and the AIC of both models, AIC favoured the Basic Model, while the PRESS statistic favoured the Engineered data. However the PRESS statistic had a larger relative difference in the two models compared to AIC, so overall the Engineered Model was preferred using these statistical analyses.
+Looking at the PRESS statistic and the AIC of both models, AIC favoured the Basic Model, while the PRESS statistic favoured the Engineered Model. However the PRESS statistic had a larger relative difference in the two models compared to AIC, so overall the Engineered Model was preferred using these statistical analyses.
 
+Looking at the PRESS statistic and the AIC of both models, AIC is favouring the Basic Model, while the PRESS statistic favours the Engineered Model. However the PRESS statistic has a larger relative difference in the two models compared to AIC, so overall the Engineered Model is preferred using these statistical analysis.
 
 ## Cross-Validation
 ```{r crossValidation}
@@ -797,23 +801,26 @@ cvResults <- crossValidate(
 
 Based on the rPMSEs, we saw that the mean for the Engineered Model was greater than that of the Basic Model, and the standard deviation of the Engineered Model was less than that of the Basic Model.
 
+#### Table 2.5: Comparison of Models' rPMSE
 ```{r crossVData}
 rPMSEs <- cvResults$rPMSEs
 PMSETable <- data.frame(c(mean(rPMSEs$model1), sd(rPMSEs$model1)), c(mean(rPMSEs$model2), sd(rPMSEs$model2)))
 colnames(PMSETable) <- c("Basic Model", "Engineered Model")
 rownames(PMSETable) <- c("Mean", "SD")
 PMSETable
+```
 
+```{r crossVPlots}
 boxplot(
   list(model1rPMSE = rPMSEs$model1, model2rPMSE = rPMSEs$model2), 
-  main = "Comparison of rPMSEs"
+  main = "Fig. 2.6: Comparison of rPMSEs"
 )
 
 layout(matrix(c(1, 2, 4, 5), 1, 2, byrow = TRUE))
 plot(
   cvResults$predictions$model1,
   cvResults$residuals$model1,
-  main = "Predicted Values vs Basic Model Res",
+  main = "Fig 2.7.1: Predictions vs Basic Model Res",
   cex.main = 0.8,
   col = adjustcolor("firebrick", 0.5),
   xlab = "Predicted Values",
@@ -823,7 +830,7 @@ plot(
 plot(
   cvResults$predictions$model2,
   cvResults$residuals$model2,
-  main = "Predicted Values vs Engineered Model Res",
+  main = "Fig 2.7.2: Predictions vs Engineered Model Res",
   cex.main = 0.8,
   col = adjustcolor("firebrick", 0.5),
   xlab = "Predicted Values",
@@ -842,7 +849,7 @@ By plotting the Normal Q-Q Plot, we found strong evidence of Normality of the er
 par(mfrow = c(1, 2))
 qqnorm(
   cvResults$residuals$model1,
-  main = "Normal Q-Q Plot for Basic",
+  main = "Fig. 2.8.1: Normal Q-Q Plot for Basic",
   cex.main = 0.85,
   pch = 16,
   col = adjustcolor("firebrick", 0.5)
@@ -851,7 +858,7 @@ abline(a = 0, b = 20, lty = 2, lwd = 2, col = "blue")
 
 qqnorm(
   cvResults$residuals$model2,
-  main = "Normal Q-Q Plot for Engineered",
+  main = "Fig. 2.8.2: Normal Q-Q Plot for Engineered",
   cex.main = 0.85,
   pch = 16,
   col = adjustcolor("firebrick", 0.5)
@@ -898,64 +905,94 @@ knitr::opts_chunk$set(include = TRUE, echo = TRUE, eval = FALSE)
 ## Section 1: Constants and Functions
 
 ### Chunk 1
+
+Defines all of the constants. Executes at the top of the file.
 ```{r ref.label = "constants"}
 ```
 
 ### Chunk 2
+
+Defines functions related to BMI. Executes immediately after Chunk 1.
 ```{r ref.label = "bmiFunctions"}
 ```
 
 ### Chunk 3
+
+Defines the function to calculate the number of cigarettes smoked per day corresponding to a 'number' value. Executes immediately after Chunk 2.
 ```{r ref.label = "numCigs"}
 ```
 
 ### Chunk 4
+
+Defines the function used to process the raw data into a dataset with factors which is used by the Basic Model. Executes immediately after Chunk 3.
 ```{r ref.label = "decodeBirthVariates"}
 ```
 
 ### Chunk 5
+
+Defines the function which calculates our engineered smoking impact feature. Executes immediately after Chunk 4.
 ```{r ref.label = "smokingImpact"}
 ```
 
 ### Chunk 6
+
+Defines the function used to process the raw data into a dataset with factors and all of our engineered features. Executes immediately after Chunk 5.
 ```{r ref.label = "engineeredFeatures"}
 ```
 
 ### Chunk 7
+
+Defines the function used to compute the average AIC of a model across the multiple imputed datasets. Executes immediately after Chunk 6.
 ```{r ref.label = "meanAIC"}
 ```
 
 ### Chunk 8
+
+Defines the function used to perform automated model selection. Executes immediately after Chunk 7.
 ```{r ref.label = "selectModel"}
 ```
 
 ### Chunk 9
+
+Defines the function used to perform cross-validation between our models. Executes immediately after Chunk 8
 ```{r ref.label = "crossValidate"}
 ```
 
 ## Section 2: Dataset Creation
 
 ### Chunk 1
+
+Imports our raw data. Executes immediately after Chunk 9 of Section 1 (this is still all at the top of the Report before any text.)
 ```{r ref.label = "import"}
 ```
 
 ### Chunk 2
+
+Corrects a transcription error. Executes immediately after Chunk 1.
 ```{r ref.label = "mend"}
 ```
 
 ### Chunk 3
+
+Multiply imputes our dataset. Executes immediately after Chunk 2.
 ```{r ref.label = "mice"}
 ```
 
 ### Chunk 4
+
+Uses decodeBirthVariates to create the first model's datasets from the multiply imputed datasets. Executes immediately after Chunk 3.
 ```{r ref.label = "decodeBirths"}
 ```
 
 ### Chunk 5
+
+Finds the optimal value for the impactHalfLife parameter. Executes immediately after Chunk 4.
 ```{r ref.label = "tuneHalfLife", eval = TRUE}
 ```
 
 ### Chunk 6
+
+Uses the craftFeatures function to create the second model's datasets from the multiply imputed datasets. Executes immedately after Chunk 4.
 ```{r ref.label = "craftFeatures"}
 ```
 
@@ -1080,27 +1117,50 @@ Produces a table of the number of occurrences per marital status category. Appea
 ```{r ref.label = "outliers"}
 ```
 
-
 ### Table 1.10
 
 Produces a table of the percentage of NAs in the dataset by variable. Appears in Missing Data.
 ```{r ref.label = "NAs"}
 ```
 
-### Figure 2.1
+### Table 2.1
+
+Table
+```{r ref.label = "summaryStatistics"}
+```
+
+### Figure 2.2
+
+Plot
+```{r ref.label = "plotDiagnostic1"}
+```
+
+
+### Figure 2.3
+
+Plot
+```{r ref.label = "plotDiagnostic2"}
+```
+
+### Table 2.4
 
 Produces a table of AIC and PRESS Statistic value for both models. Appears PRESS Statistic and AIC.
 ```{r ref.label = "PRESSandAIC"}
 ```
 
-#### Figure 2.2
+### Table 2.5
 
 Produces a table of the mean and standard deviations for each model's rPMSE, a boxplot comparison of both rPMSEs, and plots residuals vs fitted values for each model. Appears in Cross Validation.
 ```{r ref.label = "crossVData"}
-
 ```
 
-### Figure 2.3
+### Figure 2.{6, 7}
+
+Plot
+```{r ref.label = "crossVPlots"}
+```
+
+### Figure 2.8
 
 Produces a Normal Q-Q plot for both models. Appears in Cross Validation.
 ```{r ref.label = "qq"}
@@ -1109,7 +1169,7 @@ Produces a Normal Q-Q plot for both models. Appears in Cross Validation.
 
 ### Figure 3.1
 
-Produces a Q-Q Plot of actual values against predicted values. Appears in Cross Validation.
+Produces a Q-Q Plot of ground truth baby birth weights against predicted values. Appears in Cross Validation.
 ```{r extraQQ, eval = TRUE}
 qqplot(
   cvResults$predictions$model1,
@@ -1131,15 +1191,15 @@ abline(a = 0, b = 1, lty = 2, col = "red")
 ```
 
 ### Figure 3.2
-Cook's Distance plot for Basic Model - Appears in Model Selection.
 
+Cook's Distance plot for Basic Model - Appears in Model Selection.
 ```{r leverage1, eval = TRUE}
 plot(basicBirthWeightModel, cex = 0.4, which = c(4, 4), pch = 19, lwd = 2, main = NULL)
 ```
 
 ### Figure 3.3
-Cook's Distance plot for Engineered Model - Appears in Model Selection.
 
+Cook's Distance plot for Engineered Model - Appears in Model Selection.
 ```{r leverage2, eval = TRUE}
 plot(engineeredBirthWeightModel, cex = 0.4, which = c(4, 4), pch = 19, lwd = 2, main = NULL)
 ```
@@ -1166,7 +1226,6 @@ format(round(enginCoeff, 3), digits = 2, scientific = FALSE)
 ### Figure 3.6
 
 Produces a Residual vs Fitted, Normal QQ, and Scale-Location plot for the Engineered Model. Appears in Discussion.
-
 ```{r summaryPlots2, eval = TRUE}
 plot(engineeredBirthWeightModel, cex = 0.4, which = c(1, 3), pch = 19, lwd = 2, main = NULL)
 ```
@@ -1186,11 +1245,13 @@ percentTime
 
 ### Chunk 1
 
+Returns the best model as chosen by automated model selection. Discussed and appears in Candidate Model 1.
 ```{r ref.label = "model1"}
 ```
 
 ### Chunk 2
 
+Returns the best model including the engineered variables as chosen by automated model selection. Discussed and appears in Candidated Model 2.
 ```{r ref.label = "model2"}
 ```
 
